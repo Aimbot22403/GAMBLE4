@@ -123,9 +123,22 @@ app.post('/api/mines/cashout', authenticateToken, async (req, res) => {
     const game = minesGames.get(req.user.id); if (!game || game.clicks === 0) return res.status(400).json({ message: "No game or clicks to cashout." }); const winnings = Math.floor(game.bet * Math.pow(game.mult, game.clicks)); const user = await User.findById(req.user.id); user.coins += winnings; await user.save(); minesGames.delete(req.user.id); broadcastOnlineUsers(); res.json({ message: `Cashed out ${winnings} coins!`, newBalance: user.coins });
 });
 
+io.use(async (socket, next) => {
+    const token = socket.handshake.auth.token;
+    if (!token) return next(new Error("Authentication error"));
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const user = await User.findById(decoded.id).lean();
+        if (!user) return next(new Error("User not found"));
+        socket.userId = user._id.toString();
+        socket.username = user.username;
+        next();
+    } catch (err) {
+        return next(new Error("Authentication error"));
+    }
+});
 io.on('connection', async (socket) => {
-    console.log(`User authenticated and connected: ${socket.username}`);
-    
+    console.log(`User Authenticated & Connected: ${socket.username}`);
     try {
         await User.findByIdAndUpdate(socket.userId, { online: true });
         broadcastOnlineUsers();
@@ -140,11 +153,14 @@ io.on('connection', async (socket) => {
     socket.on('chat_message', async (msg) => {
         if (socket.username && msg) {
             try {
+                const sender = await User.findOne({ username: socket.username }).select('pfp').lean();
+                if (!sender) return; 
+                
                 const newMessage = new Message({ username: socket.username, message: msg });
                 await newMessage.save();
-                const sender = await User.findOne({ username: socket.username }).select('pfp').lean();
+
                 io.emit('chat_message', { ...newMessage.toObject(), pfp: sender.pfp });
-            } catch (err) { console.error("Error saving chat message:", err); }
+            } catch (err) { console.error("Error saving/sending chat message:", err); }
         }
     });
 
@@ -171,17 +187,18 @@ io.on('connection', async (socket) => {
         }
     });
 });
-
 async function broadcastOnlineUsers() {
     const onlineUsers = await User.find({ online: true }).select('username coins pfp');
     io.emit('online_users', onlineUsers);
 }
 setInterval(broadcastOnlineUsers, 5000);
 
+// --- CATCH-ALL ROUTE ---
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// --- SERVER LISTEN ---
 server.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });

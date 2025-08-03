@@ -143,11 +143,12 @@
         function setupWebSocket() {
             if (socket) socket.disconnect();
             
+            // THE FIX: Pass the token in the 'auth' object. The server's middleware will handle it.
             socket = io({ auth: { token } });
 
             socket.on('connect_error', (err) => {
                 console.error("Socket connection error:", err.message);
-                alert("Connection to server failed. Please refresh.");
+                alert("Real-time connection failed. Please refresh the page.");
             });
 
             socket.on('online_users', users => { let l = ''; users.sort((a,b) => b.coins - a.coins).forEach(u => { l += `<li data-username="${u.username}"><img src="${u.pfp}" alt="${u.username}"><div class="user-details-list"><div class="username">${u.username}</div><div class="coins">${u.coins.toLocaleString()} coins</div></div></li>`; }); $('#online-users-list').innerHTML = l; });
