@@ -7,44 +7,35 @@ const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const path = require('path');
 
-// --- SETUP ---
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: { origin: "*", methods: ["GET", "POST"] }
 });
 
-// --- ENVIRONMENT VARIABLES & SECRETS ---
-// Render will provide these values from your project's "Environment" tab.
 const PORT = process.env.PORT || 3000;
 const MONGO_URI = process.env.MONGODB_URI;
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// --- VALIDATE ENVIRONMENT VARIABLES ---
 if (!MONGO_URI || !JWT_SECRET) {
     console.error("FATAL ERROR: MONGODB_URI and JWT_SECRET must be defined in environment variables.");
     process.exit(1);
 }
 
-// --- MIDDLEWARE ---
 app.use(cors());
-app.use(express.json());
-// This line serves all static files (like index.html) from the 'public' directory.
+app.use(express.json({ limit: '25mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// --- DATABASE CONNECTION ---
 mongoose.connect(MONGO_URI)
     .then(() => console.log("MongoDB connected successfully."))
     .catch(err => console.error("MongoDB connection error:", err));
 
-// --- SCHEMAS ---
-// Mongoose will automatically create these collections in the DB when you first register a user.
 const userSchema = new mongoose.Schema({
     username: { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, required: true },
     coins: { type: Number, default: 10000 },
     bio: { type: String, default: "No bio set." },
-    pfp: { type: String, default: "https://i.imgur.com/8bzvETr.png" },
+    pfp: { type: String, default: "https://i.imgur.com/8bzvETr.png" }, 
     online: { type: Boolean, default: false }
 });
 const messageSchema = new mongoose.Schema({
@@ -55,11 +46,9 @@ const messageSchema = new mongoose.Schema({
 const User = mongoose.model('User', userSchema);
 const Message = mongoose.model('Message', messageSchema);
 
-// --- IN-MEMORY GAME STATE ---
 const blackjackGames = new Map();
 const minesGames = new Map();
 
-// --- AUTH MIDDLEWARE ---
 const authenticateToken = (req, res, next) => {
     const token = req.header('Authorization')?.replace('Bearer ', '');
     if (!token) return res.status(401).json({ message: 'Access denied.' });
@@ -70,8 +59,6 @@ const authenticateToken = (req, res, next) => {
         res.status(400).json({ message: 'Invalid token.' });
     }
 };
-
-// --- API ROUTES (/api/...) ---
 
 app.post('/api/register', async (req, res) => {
     try {
@@ -103,7 +90,12 @@ app.get('/api/profile', authenticateToken, async (req, res) => {
 });
 
 app.post('/api/profile/update', authenticateToken, async (req, res) => {
-    await User.findByIdAndUpdate(req.user.id, { bio: req.body.bio, pfp: req.body.pfp });
+    const { bio, pfp } = req.body;
+    const updateData = {};
+    if (bio) updateData.bio = bio;
+    if (pfp) updateData.pfp = pfp; 
+
+    await User.findByIdAndUpdate(req.user.id, updateData);
     res.status(200).json({ message: 'Profile updated' });
 });
 
@@ -112,7 +104,6 @@ app.get('/api/user/:username', async (req, res) => {
     res.json(user || { message: 'User not found' });
 });
 
-// --- GAME ROUTES ---
 const getCardValue = c => { if (['J', 'Q', 'K'].includes(c.value)) return 10; if (c.value === 'A') return 11; return parseInt(c.value); };
 const getHandValue = h => { let v = h.reduce((s, c) => s + getCardValue(c), 0); let a = h.filter(c => c.value === 'A').length; while (v > 21 && a > 0) { v -= 10; a--; } return v; };
 
@@ -132,24 +123,63 @@ app.post('/api/mines/cashout', authenticateToken, async (req, res) => {
     const game = minesGames.get(req.user.id); if (!game || game.clicks === 0) return res.status(400).json({ message: "No game or clicks to cashout." }); const winnings = Math.floor(game.bet * Math.pow(game.mult, game.clicks)); const user = await User.findById(req.user.id); user.coins += winnings; await user.save(); minesGames.delete(req.user.id); broadcastOnlineUsers(); res.json({ message: `Cashed out ${winnings} coins!`, newBalance: user.coins });
 });
 
-// --- WEBSOCKETS ---
 io.on('connection', (socket) => {
     socket.on('authenticate', async (token) => { try { const decoded = jwt.verify(token, JWT_SECRET); const user = await User.findById(decoded.id); if (!user) throw new Error("User not found"); await User.findByIdAndUpdate(user._id, { online: true }); socket.userId = user._id.toString(); socket.username = user.username; broadcastOnlineUsers(); const lastMessages = await Message.find().sort({ timestamp: -1 }).limit(50); socket.emit('chat_history', lastMessages.reverse()); } catch (err) { socket.disconnect(); } });
-    socket.on('chat_message', async (msg) => { if (socket.username && msg) { const newMessage = new Message({ username: socket.username, message: msg }); await newMessage.save(); io.emit('chat_message', newMessage); } });
-    socket.on('disconnect', async () => { if (socket.userId) { await User.findByIdAndUpdate(socket.userId, { online: false }); broadcastOnlineUsers(); blackjackGames.delete(socket.userId); minesGames.delete(socket.userId); } });
+        socket.on('chat_message', async (msg) => {
+        if (socket.username && msg) {
+            const newMessage = new Message({ username: socket.username, message: msg });
+            await newMessage.save();
+            io.emit('chat_message', { ...newMessage.toObject(), pfp: socket.pfp });
+        }
+    });
+
+        socket.on('chat_message', async (msg) => {
+        if (socket.username && msg) {
+            const newMessage = new Message({ username: socket.username, message: msg });
+            await newMessage.save();
+            const sender = await User.findOne({ username: socket.username }).select('pfp');
+            io.emit('chat_message', { ...newMessage.toObject(), pfp: sender.pfp });
+        }
+    });
+
+        socket.on('delete_message', async (messageId) => {
+        try {
+            const message = await Message.findById(messageId);
+            if (!message) return; 
+
+            if (message.username !== socket.username) return;
+
+            const fiveMinutes = 5 * 60 * 1000;
+            if (Date.now() - message.timestamp.getTime() > fiveMinutes) {
+                socket.emit('delete_error', { message: "Cannot delete messages after 5 minutes." });
+                return;
+            }
+
+            await Message.findByIdAndDelete(messageId);
+            io.emit('message_deleted', messageId);
+        } catch (error) {
+            console.error("Error deleting message:", error);
+        }
+    });
+        socket.on('disconnect', async () => {
+        if (socket.userId) {
+            await User.findByIdAndUpdate(socket.userId, { online: false });
+            broadcastOnlineUsers();
+            blackjackGames.delete(socket.userId);
+            minesGames.delete(socket.userId);
+        }
+    });
 });
-async function broadcastOnlineUsers() { const onlineUsers = await User.find({ online: true }).select('username coins'); io.emit('online_users', onlineUsers); }
+async function broadcastOnlineUsers() {
+    const onlineUsers = await User.find({ online: true }).select('username coins pfp');
+    io.emit('online_users', onlineUsers);
+}
 setInterval(broadcastOnlineUsers, 5000);
 
-
-// --- CATCH-ALL ROUTE ---
-// This must be the last route. It serves the frontend for any non-API request.
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-
-// --- SERVER LISTEN ---
 server.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });
