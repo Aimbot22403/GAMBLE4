@@ -123,53 +123,55 @@ app.post('/api/mines/cashout', authenticateToken, async (req, res) => {
     const game = minesGames.get(req.user.id); if (!game || game.clicks === 0) return res.status(400).json({ message: "No game or clicks to cashout." }); const winnings = Math.floor(game.bet * Math.pow(game.mult, game.clicks)); const user = await User.findById(req.user.id); user.coins += winnings; await user.save(); minesGames.delete(req.user.id); broadcastOnlineUsers(); res.json({ message: `Cashed out ${winnings} coins!`, newBalance: user.coins });
 });
 
-io.on('connection', (socket) => {
-    socket.on('authenticate', async (token) => { try { const decoded = jwt.verify(token, JWT_SECRET); const user = await User.findById(decoded.id); if (!user) throw new Error("User not found"); await User.findByIdAndUpdate(user._id, { online: true }); socket.userId = user._id.toString(); socket.username = user.username; broadcastOnlineUsers(); const lastMessages = await Message.find().sort({ timestamp: -1 }).limit(50); socket.emit('chat_history', lastMessages.reverse()); } catch (err) { socket.disconnect(); } });
-        socket.on('chat_message', async (msg) => {
+io.on('connection', async (socket) => {
+    console.log(`User authenticated and connected: ${socket.username}`);
+    
+    try {
+        await User.findByIdAndUpdate(socket.userId, { online: true });
+        broadcastOnlineUsers();
+        const lastMessages = await Message.find().sort({ timestamp: -1 }).limit(50).lean();
+        const messagesWithPfps = await Promise.all(lastMessages.map(async msg => {
+            const sender = await User.findOne({ username: msg.username }).select('pfp').lean();
+            return { ...msg, pfp: sender ? sender.pfp : 'https://i.imgur.com/8bzvETr.png' };
+        }));
+        socket.emit('chat_history', messagesWithPfps.reverse());
+    } catch (err) { console.error("Error during socket connection setup:", err); }
+
+    socket.on('chat_message', async (msg) => {
         if (socket.username && msg) {
-            const newMessage = new Message({ username: socket.username, message: msg });
-            await newMessage.save();
-            io.emit('chat_message', { ...newMessage.toObject(), pfp: socket.pfp });
+            try {
+                const newMessage = new Message({ username: socket.username, message: msg });
+                await newMessage.save();
+                const sender = await User.findOne({ username: socket.username }).select('pfp').lean();
+                io.emit('chat_message', { ...newMessage.toObject(), pfp: sender.pfp });
+            } catch (err) { console.error("Error saving chat message:", err); }
         }
     });
 
-        socket.on('chat_message', async (msg) => {
-        if (socket.username && msg) {
-            const newMessage = new Message({ username: socket.username, message: msg });
-            await newMessage.save();
-            const sender = await User.findOne({ username: socket.username }).select('pfp');
-            io.emit('chat_message', { ...newMessage.toObject(), pfp: sender.pfp });
-        }
-    });
-
-        socket.on('delete_message', async (messageId) => {
+    socket.on('delete_message', async (messageId) => {
         try {
             const message = await Message.findById(messageId);
-            if (!message) return; 
-
-            if (message.username !== socket.username) return;
-
+            if (!message || message.username !== socket.username) return;
             const fiveMinutes = 5 * 60 * 1000;
-            if (Date.now() - message.timestamp.getTime() > fiveMinutes) {
-                socket.emit('delete_error', { message: "Cannot delete messages after 5 minutes." });
-                return;
-            }
-
+            if (Date.now() - message.timestamp.getTime() > fiveMinutes) return;
             await Message.findByIdAndDelete(messageId);
             io.emit('message_deleted', messageId);
-        } catch (error) {
-            console.error("Error deleting message:", error);
-        }
+        } catch (error) { console.error("Error deleting message:", error); }
     });
-        socket.on('disconnect', async () => {
+
+    socket.on('disconnect', async () => {
         if (socket.userId) {
-            await User.findByIdAndUpdate(socket.userId, { online: false });
-            broadcastOnlineUsers();
-            blackjackGames.delete(socket.userId);
-            minesGames.delete(socket.userId);
+            try {
+                await User.findByIdAndUpdate(socket.userId, { online: false });
+                broadcastOnlineUsers();
+                blackjackGames.delete(socket.userId);
+                minesGames.delete(socket.userId);
+                console.log(`User disconnected: ${socket.username}`);
+            } catch (err) { console.error("Error during socket disconnect:", err); }
         }
     });
 });
+
 async function broadcastOnlineUsers() {
     const onlineUsers = await User.find({ online: true }).select('username coins pfp');
     io.emit('online_users', onlineUsers);
