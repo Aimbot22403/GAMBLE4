@@ -39,6 +39,10 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         h1 { margin-top: 0; padding-bottom: 15px; font-size: 24px; border-bottom: 1px solid var(--secondary-color); }
         .game-container { background-color: var(--primary-color); padding: 20px; border-radius: var(--border-radius); box-shadow: var(--shadow); }
+        .game-controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 20px; background-color: var(--secondary-color); padding: 15px; border-radius: var(--border-radius); }
+        .game-controls .form-group { display: flex; flex-direction: column; }
+        .game-controls label { font-size: 13px; color: #aaa; margin-bottom: 5px; }
+        .game-controls input, .game-controls select { padding: 8px; background-color: var(--bg-color); border: 1px solid #444; border-radius: var(--border-radius); color: var(--text-color); max-width: 140px; font-size: 14px; }
         .custom-button { padding: 9px 18px; background-color: var(--accent-color); color: var(--bg-color); border: none; border-radius: var(--border-radius); cursor: pointer; font-size: 14px; font-weight: bold; transition: all 0.2s; }
         .custom-button:hover { background-color: #e0e0e0; transform: translateY(-1px); }
         .custom-button:disabled { background-color: #555; color: #888; cursor: not-allowed; transform: none; }
@@ -52,23 +56,23 @@
         .auth-options label { display: flex; align-items: center; cursor: pointer; }
         .auth-options input[type="checkbox"] { margin-right: 8px; }
 
-        /* roulette style */
+        /* --- UPDATED ROULETTE STYLES --- */
         #roulette-tab h1 { text-align: center; border-bottom: none; margin-bottom: 10px; }
         #roulette-container { display: flex; flex-direction: column; align-items: center; gap: 20px; }
         .roulette-top-section { display: flex; align-items: center; justify-content: center; gap: 30px; width: 100%; flex-wrap: wrap; }
-        .roulette-wheel-container { position: relative; width: 280px; height: 280px; flex-shrink: 0; }
-        .wheel-marker { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-top: 18px solid var(--accent-color); z-index: 5; }
-        .roulette-wheel { width: 100%; height: 100%; border: 8px solid #855d3a; border-radius: 50%; background-color: var(--roulette-black); box-shadow: inset 0 0 20px rgba(0,0,0,0.6), 0 0 15px rgba(0,0,0,0.3); position: relative; overflow: hidden; transition: transform 6s cubic-bezier(0.1, 0.7, 0.3, 1); }
-        #roulette-wheel-bg { width: 100%; height: 100%; border-radius: 50%; position: absolute; }
+        .roulette-wheel-container { position: relative; width: 300px; height: 300px; flex-shrink: 0; }
+        .wheel-marker { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 14px solid transparent; border-right: 14px solid transparent; border-top: 20px solid var(--accent-color); z-index: 5; }
+        .roulette-wheel { width: 100%; height: 100%; border-radius: 50%; position: relative; transition: transform 6s cubic-bezier(0.1, 0.7, 0.3, 1); }
+        #roulette-wheel-bg { width: 100%; height: 100%; border-radius: 50%; position: absolute; background-color: var(--roulette-black); box-shadow: inset 0 0 20px rgba(0,0,0,0.6), 0 0 15px rgba(0,0,0,0.3); border: 8px solid #855d3a; }
         .wheel-number-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-        .wheel-number { position: absolute; top: 50%; left: 50%; width: 50%; transform-origin: 0 0; font-weight: bold; font-size: 14px; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: flex-end; padding-bottom: 110px; }
+        .wheel-number { position: absolute; top: 50%; left: 50%; height: 50%; transform-origin: 0 0; font-weight: bold; font-size: 14px; color: white; text-shadow: 1px 1px 1px #000; text-align: center; }
+        .wheel-number span { display: block; transform: rotate(-90deg) translate(10px, -145px); }
         .roulette-controls { display: flex; flex-direction: column; gap: 15px; background-color: var(--secondary-color); padding: 15px; border-radius: var(--border-radius); }
         .roulette-controls .form-group { display: flex; align-items: center; gap: 10px; }
         .roulette-controls label { margin-bottom: 0; }
         .roulette-controls input { max-width: 120px; text-align: right; }
         .roulette-controls .buttons { display: flex; gap: 10px; }
         #roulette-status { font-size: 1.2em; font-weight: bold; min-height: 28px; text-align: center; }
-
         .roulette-table { background-color: var(--primary-color); padding: 10px; border-radius: var(--border-radius); width: 100%; max-width: 800px; }
         .roulette-grid-container { display: grid; grid-template-columns: 50px 1fr 50px; gap: 5px; }
         .roulette-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 5px; }
@@ -82,6 +86,13 @@
         .outside-bets-2 { display: grid; grid-column: 1 / 4; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top: 5px; }
         .roulette-cell .bet-chip { position: absolute; bottom: 2px; right: 2px; width: 18px; height: 18px; background-color: #ffeb3b; color: black; font-size: 10px; line-height: 18px; border-radius: 50%; font-weight: bold; text-align: center; box-shadow: 0 0 5px rgba(0,0,0,0.5); display: none; }
         .roulette-cell.has-bet .bet-chip { display: block; }
+        
+        /* --- UPDATED MINES & BLACKJACK LAYOUT --- */
+        #bj-actions-container { display: flex; justify-content: center; gap: 10px; margin-top: 20px; }
+        #mines-info { display: flex; justify-content: space-around; align-items: center; background: var(--secondary-color); padding: 15px; border-radius: var(--border-radius); margin-top: 20px; }
+        #mines-info > div { text-align: center; }
+        #mines-info span { display: block; font-size: 14px; color: #aaa; }
+        #mines-info strong { font-size: 1.2em; }
     </style>
 </head>
 <body>
@@ -129,10 +140,10 @@
         </aside>
         
         <main class="main-content">
-            <div id="home-tab" class="tab-content active"><div class="home-container"><div class="developer-block"><a href="https://fakecrime.bio/GhostUD" target="_blank" style="text-decoration:none;"><img src="https://i.imgur.com/8bzvETr.png" alt="Developer PFP" style="width: 100px; height: 100px; border-radius: 50%; border: 3px solid var(--accent-color); margin-bottom: 20px; cursor: pointer; transition: transform 0.3s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'"><h2>Developed by Ghost</h2><p style="color: #aaa; line-height: 1.6;">A full-stack gambling application using Node.js, Express, and WebSockets. All balances are virtual coins with no real-world value.</p></a></div></div></div>
+            <div id="home-tab" class="tab-content active"><div class="home-container" style="display: flex; justify-content: center; align-items: center; text-align: center; height: 80%;"><div class="developer-block" style="background-color: var(--primary-color); padding: 40px; border-radius: var(--border-radius); box-shadow: var(--shadow); max-width: 400px;"><a href="https://fakecrime.bio/GhostUD" target="_blank" style="text-decoration:none;"><img src="https://i.imgur.com/8bzvETr.png" alt="Developer PFP" style="width: 100px; height: 100px; border-radius: 50%; border: 3px solid var(--accent-color); margin-bottom: 20px; cursor: pointer; transition: transform 0.3s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'"><h2>Developed by Ghost</h2><p style="color: #aaa; line-height: 1.6;">A full-stack gambling application using Node.js, Express, and WebSockets. All balances are virtual coins with no real-world value.</p></a></div></div></div>
             <div id="profile-page" class="tab-content"><h1>Edit Profile</h1><img id="profile-pfp-preview" src="" alt="Your PFP" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid var(--accent-color); margin-bottom: 20px;"><div class="form-group" style="text-align: left; margin-bottom: 20px;"><label for="profile-pfp-upload" style="display: block; margin-bottom: 8px; color: #aaa;">Upload New Profile Picture</label><input type="file" id="profile-pfp-upload" accept="image/jpeg, image/png, image/gif" style="width: 100%; padding: 8px; background-color: var(--secondary-color); border: 1px solid #444; border-radius: var(--border-radius); color: var(--text-color);"><small style="color:#aaa; margin-top:5px; display:block;">Max 25MB. Your old picture will be replaced.</small></div><div class="form-group" style="text-align: left; margin-bottom: 20px;"><label for="profile-bio" style="display: block; margin-bottom: 8px; color: #aaa;">Bio</label><textarea id="profile-bio" placeholder="Tell everyone a little about yourself..." style="width: 100%; padding: 12px; background-color: var(--secondary-color); border: 1px solid #444; border-radius: var(--border-radius); color: var(--text-color); min-height: 80px; resize: vertical;"></textarea></div><button id="save-profile-btn" class="custom-button">Save Changes</button></div>
-            <div id="blackjack-tab" class="tab-content"><div class="game-container"><div class="game-controls"><div class="form-group"><label for="bj-bet-amount">Bet</label><input type="number" id="bj-bet-amount" value="100"></div><button id="bj-start-btn" class="custom-button">Start</button></div><div id="blackjack-game-area" class="game-area" style="display: none; text-align:center;"><div class="hand-container" style="margin: 20px 0; min-height: 150px;"><h3>Dealer (<span id="dealer-score">0</span>)</h3><div class="cards" id="dealer-cards" style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; min-height: 125px;"></div></div><div class="game-status" id="bj-status" style="font-size: 1.2em; font-weight: bold; min-height: 30px; margin-top: 20px; color: var(--accent-color);"></div><div id="bj-actions" class="hand-container" style="margin: 20px 0; min-height: 150px;"><h3>You (<span id="player-score">0</span>)</h3><div class="cards" id="player-cards" style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; min-height: 125px;"></div><div style="margin-top: 20px;"><button id="bj-hit-btn" class="custom-button">Hit</button><button id="bj-stand-btn" class="custom-button" style="margin: 0 10px;">Stand</button></div></div></div></div></div>
-            <div id="mines-tab" class="tab-content"><div class="game-container"><div class="game-controls"><div class="form-group"><label for="mines-bet-amount">Bet</label><input type="number" id="mines-bet-amount" value="100"></div><div class="form-group"><label for="mines-count">Mines</label><select id="mines-count"><option value="3">3</option><option value="5">5</option><option value="8">8</option><option value="10">10</option></select></div><button id="mines-start-btn" class="custom-button">Start</button></div><div id="mines-game-area" style="display: none;"><div class="mines-grid" id="mines-grid" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; max-width: 350px; margin: 20px auto;"></div><div id="mines-info" style="display: flex; justify-content: space-around; align-items: center; background: var(--secondary-color); padding: 15px; border-radius: var(--border-radius); margin-top: 20px;"><div><span style="display: block; font-size: 14px; color: #aaa;">Profit</span><strong id="mines-profit">0</strong></div><div><span style="display: block; font-size: 14px; color: #aaa;">Next Tile</span><strong id="mines-next-profit">0</strong></div><button id="mines-cashout-btn" class="custom-button" disabled>Cashout</button></div></div></div></div>
+            <div id="blackjack-tab" class="tab-content"><div class="game-container"><div class="game-controls"><div class="form-group"><label for="bj-bet-amount">Bet</label><input type="number" id="bj-bet-amount" value="100"></div><button id="bj-start-btn" class="custom-button">Start</button></div><div id="blackjack-game-area" class="game-area" style="display: none; text-align:center;"><div class="hand-container" style="margin: 20px 0; min-height: 150px;"><h3>Dealer (<span id="dealer-score">0</span>)</h3><div class="cards" id="dealer-cards" style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; min-height: 125px;"></div></div><div class="game-status" id="bj-status" style="font-size: 1.2em; font-weight: bold; min-height: 30px; margin-top: 20px; color: var(--accent-color);"></div><div id="bj-actions" class="hand-container" style="margin: 20px 0; min-height: 150px;"><h3>You (<span id="player-score">0</span>)</h3><div class="cards" id="player-cards" style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; min-height: 125px;"></div><div id="bj-actions-container"><button id="bj-hit-btn" class="custom-button">Hit</button><button id="bj-stand-btn" class="custom-button">Stand</button></div></div></div></div></div>
+            <div id="mines-tab" class="tab-content"><div class="game-container"><div class="game-controls"><div class="form-group"><label for="mines-bet-amount">Bet</label><input type="number" id="mines-bet-amount" value="100"></div><div class="form-group"><label for="mines-count">Mines</label><select id="mines-count"><option value="3">3</option><option value="5">5</option><option value="8">8</option><option value="10">10</option></select></div><button id="mines-start-btn" class="custom-button">Start</button></div><div id="mines-game-area" style="display: none;"><div class="mines-grid" id="mines-grid" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; max-width: 350px; margin: 20px auto;"></div><div id="mines-info"><div><span>Profit</span><strong id="mines-profit">0</strong></div><div><span>Next Tile</span><strong id="mines-next-profit">0</strong></div><button id="mines-cashout-btn" class="custom-button" disabled>Cashout</button></div></div></div></div>
 
             <div id="roulette-tab" class="tab-content">
                 <div id="roulette-container">
@@ -518,6 +529,8 @@
                 const c = document.createElement('div');
                 c.className = 'mine-cell';
                 c.style.cssText = 'width: 100%; padding-bottom: 100%; background-color: var(--secondary-color); border-radius: var(--border-radius); cursor: pointer; transition: background-color 0.2s; position: relative;';
+                c.addEventListener('mouseover', (e) => { if (!e.target.classList.contains('disabled')) e.target.style.backgroundColor = '#444'; });
+                c.addEventListener('mouseout', (e) => { if (!e.target.classList.contains('safe')) e.target.style.backgroundColor = 'var(--secondary-color)'; });
                 c.dataset.index = i;
                 c.addEventListener('click', handleMineClick);
                 g.appendChild(c);
@@ -527,7 +540,6 @@
         async function handleMineClick(e) {
             const cell = e.target;
             if (cell.classList.contains('disabled')) return;
-            cell.classList.add('disabled');
             try {
                 const data = await apiCall('/mines/click', { method: 'POST', body: JSON.stringify({ index: parseInt(cell.dataset.index) }) });
                 if (data.gameOver) {
@@ -633,7 +645,9 @@
                 const numberDiv = document.createElement('div');
                 numberDiv.className = 'wheel-number';
                 numberDiv.style.transform = `rotate(${rotation}deg)`;
-                numberDiv.textContent = num;
+                const numberSpan = document.createElement('span');
+                numberSpan.textContent = num;
+                numberDiv.appendChild(numberSpan);
                 numbersContainer.appendChild(numberDiv);
             });
         }
@@ -699,8 +713,8 @@
                 const currentTransform = window.getComputedStyle(wheel).transform;
                 let currentRotation = 0;
                 if (currentTransform !== 'none') {
-                    const matrix = new DOMMatrix(currentTransform);
-                    currentRotation = Math.atan2(matrix.b, matrix.a) * (180 / Math.PI);
+                    const values = currentTransform.split('(')[1].split(')')[0].split(',');
+                    currentRotation = Math.round(Math.atan2(values[1], values[0]) * (180 / Math.PI));
                 }
                 const finalAngle = (Math.floor(currentRotation / 360) + 10) * 360 + targetAngle + (Math.random() * 4 - 2);
                 wheel.style.transform = `rotate(${finalAngle}deg)`;
