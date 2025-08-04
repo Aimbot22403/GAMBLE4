@@ -35,7 +35,7 @@ const userSchema = new mongoose.Schema({
     password: { type: String, required: true },
     coins: { type: Number, default: 10000 },
     bio: { type: String, default: "No bio set." },
-    pfp: { type: String, default: "https://i.imgur.com/8bzvETr.png" }, 
+    pfp: { type: String, default: "https://i.imgur.com/8bzvETr.png" },
     online: { type: Boolean, default: false }
 });
 const messageSchema = new mongoose.Schema({
@@ -48,6 +48,7 @@ const Message = mongoose.model('Message', messageSchema);
 
 const blackjackGames = new Map();
 const minesGames = new Map();
+const rouletteGames = new Map();
 
 const authenticateToken = (req, res, next) => {
     const token = req.header('Authorization')?.replace('Bearer ', '');
@@ -93,7 +94,7 @@ app.post('/api/profile/update', authenticateToken, async (req, res) => {
     const { bio, pfp } = req.body;
     const updateData = {};
     if (bio) updateData.bio = bio;
-    if (pfp) updateData.pfp = pfp; 
+    if (pfp) updateData.pfp = pfp;
 
     await User.findByIdAndUpdate(req.user.id, updateData);
     res.status(200).json({ message: 'Profile updated' });
@@ -153,12 +154,8 @@ app.post('/api/roulette/spin', authenticateToken, async (req, res) => {
         number: 36, color: 2, dozen: 3, column: 3, parity: 2, range: 2
     };
 
-    if (bets.number && bets.number[winningNumber]) {
-        winnings += bets.number[winningNumber] * payoutMultipliers.number;
-    }
-    if (bets.color && bets.color[winningColor]) {
-        winnings += bets.color[winningColor] * payoutMultipliers.color;
-    }
+    if (bets.number && bets.number[winningNumber]) { winnings += bets.number[winningNumber] * payoutMultipliers.number; }
+    if (bets.color && bets.color[winningColor]) { winnings += bets.color[winningColor] * payoutMultipliers.color; }
     if (winningNumber > 0) {
         if (bets.parity) {
             if (winningNumber % 2 === 0 && bets.parity.even) winnings += bets.parity.even * payoutMultipliers.parity;
@@ -191,7 +188,7 @@ app.post('/api/roulette/spin', authenticateToken, async (req, res) => {
         winningColor,
         winnings,
         newBalance: user.coins,
-        message: `The wheel landed on ${winningNumber} (${winningColor}). You won ${winnings} coins.`
+        message: `The wheel landed on ${winningNumber} (${winningColor}). You won ${winnings.toLocaleString()} coins.`
     });
 });
 
@@ -227,8 +224,8 @@ io.on('connection', async (socket) => {
         if (socket.username && msg) {
             try {
                 const sender = await User.findOne({ username: socket.username }).select('pfp').lean();
-                if (!sender) return; 
-                
+                if (!sender) return;
+
                 const newMessage = new Message({ username: socket.username, message: msg });
                 await newMessage.save();
 
@@ -255,6 +252,7 @@ io.on('connection', async (socket) => {
                 broadcastOnlineUsers();
                 blackjackGames.delete(socket.userId);
                 minesGames.delete(socket.userId);
+                rouletteGames.delete(socket.userId);
                 console.log(`User disconnected: ${socket.username}`);
             } catch (err) { console.error("Error during socket disconnect:", err); }
         }

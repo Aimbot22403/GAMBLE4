@@ -6,148 +6,182 @@
     <title>Ghosts Gambling</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
+        /* --- Refined Base Styles & Variables --- */
         :root {
-            --bg-color: #121212; --primary-color: #1e1e1e; --secondary-color: #2a2a2a;
-            --text-color: #e0e0e0; --accent-color: #ffffff; --border-radius: 12px;
+            --bg-color: #121212; --primary-color: #1a1a1a; --secondary-color: #252525;
+            --text-color: #e0e0e0; --accent-color: #ffffff; --border-radius: 10px;
             --shadow: 0 4px 15px rgba(0, 0, 0, 0.5); --safe-color: #2a9d8f; --mine-color: #e76f51;
-            --roulette-red: #d94848; --roulette-black: #222; --roulette-green: #4caf50;
+            --roulette-red: #c0392b; --roulette-black: #2c3e50; --roulette-green: #27ae60;
         }
         * { box-sizing: border-box; }
         html, body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background-color: var(--bg-color); color: var(--text-color);
-            margin: 0; height: 100vh; width: 100vw; overflow: hidden;
+            margin: 0; height: 100vh; width: 100vw; overflow: hidden; font-size: 15px;
         }
         #app-container { display: none; flex-direction: row; width: 100%; height: 100%; }
-        .sidebar { width: 280px; background-color: var(--primary-color); padding: 20px; display: flex; flex-direction: column; border-right: 1px solid var(--secondary-color); flex-shrink: 0; }
-        .main-content { flex-grow: 1; padding: 30px; overflow-y: auto; height: 100%; }
-        .chat-sidebar { width: 350px; background-color: var(--primary-color); padding: 20px; display: flex; flex-direction: column; border-left: 1px solid var(--secondary-color); flex-shrink: 0; height: 100%; }
-        .logo { font-size: 24px; font-weight: bold; text-align: center; margin-bottom: 30px; color: var(--accent-color); }
-        .nav-menu button { display: block; width: 100%; padding: 15px; margin-bottom: 10px; background-color: var(--secondary-color); color: var(--text-color); border: none; border-radius: var(--border-radius); text-align: left; font-size: 16px; cursor: pointer; transition: all 0.2s; }
+        .sidebar { width: 250px; background-color: var(--primary-color); padding: 15px; display: flex; flex-direction: column; border-right: 1px solid var(--secondary-color); flex-shrink: 0; }
+        .main-content { flex-grow: 1; padding: 20px; overflow-y: auto; height: 100%; }
+        .chat-sidebar { width: 320px; background-color: var(--primary-color); padding: 15px; display: flex; flex-direction: column; border-left: 1px solid var(--secondary-color); flex-shrink: 0; height: 100%; }
+        .logo { font-size: 22px; font-weight: bold; text-align: center; margin-bottom: 25px; color: var(--accent-color); }
+
+        /* --- Compact & Refined UI Elements --- */
+        .nav-menu button { display: block; width: 100%; padding: 12px; margin-bottom: 8px; background-color: var(--secondary-color); color: var(--text-color); border: none; border-radius: var(--border-radius); text-align: left; font-size: 15px; cursor: pointer; transition: all 0.2s; }
         .nav-menu button:hover, .nav-menu button.active { background-color: var(--accent-color); color: var(--bg-color); transform: translateY(-2px); box-shadow: 0 2px 8px rgba(255, 255, 255, 0.2); }
-        .user-info { margin-top: auto; background-color: var(--secondary-color); padding: 15px; border-radius: var(--border-radius); position: relative; }
+        .user-info { margin-top: auto; background-color: var(--secondary-color); padding: 12px; border-radius: var(--border-radius); position: relative; }
         .user-info-header { display: flex; align-items: center; justify-content: space-between; }
         .user-details { display: flex; align-items: center; }
-        .user-info img { width: 40px; height: 40px; border-radius: 50%; margin-right: 10px; object-fit: cover; }
-        #username-display { font-weight: bold; } #coins-display { font-size: 14px; color: #aaa; }
-        #menu-button { background: none; border: none; color: var(--text-color); font-size: 24px; cursor: pointer; }
-        .dropdown-menu { display: none; position: absolute; bottom: 65px; right: 15px; background-color: var(--secondary-color); border-radius: var(--border-radius); box-shadow: var(--shadow); overflow: hidden; z-index: 100; width: 150px; }
-        .dropdown-menu a { display: block; padding: 12px 20px; color: var(--text-color); text-decoration: none; transition: background-color 0.2s; }
-        .dropdown-menu a:hover { background-color: #444; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; animation: fadeIn 0.5s; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        h1 { margin-top: 0; border-bottom: 2px solid var(--secondary-color); padding-bottom: 15px; }
-        .home-container { display: flex; justify-content: center; align-items: center; text-align: center; height: 80%; }
-        .developer-block { background-color: var(--primary-color); padding: 40px; border-radius: var(--border-radius); box-shadow: var(--shadow); max-width: 400px; }
-        .developer-block img { width: 100px; height: 100px; border-radius: 50%; border: 3px solid var(--accent-color); margin-bottom: 20px; cursor: pointer; transition: transform 0.3s; }
-        .developer-block img:hover { transform: scale(1.1); }
-        .developer-block h2 { margin-top: 0; } .developer-block p { color: #aaa; line-height: 1.6; } .developer-block a { color: var(--accent-color); text-decoration: none; }
+        .user-info img { width: 38px; height: 38px; border-radius: 50%; margin-right: 10px; object-fit: cover; }
+        #username-display { font-weight: bold; } #coins-display { font-size: 13px; color: #aaa; }
+        #menu-button { background: none; border: none; color: var(--text-color); font-size: 22px; cursor: pointer; }
+        .dropdown-menu { display: none; position: absolute; bottom: 60px; right: 12px; background-color: #333; border-radius: var(--border-radius); box-shadow: var(--shadow); overflow: hidden; z-index: 100; width: 140px; border: 1px solid #444; }
+        .dropdown-menu a { display: block; padding: 10px 15px; color: var(--text-color); text-decoration: none; transition: background-color 0.2s; font-size: 14px; }
+        .dropdown-menu a:hover { background-color: #454545; }
+        .tab-content { display: none; } .tab-content.active { display: block; animation: fadeIn 0.5s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        h1 { margin-top: 0; padding-bottom: 15px; font-size: 24px; border-bottom: 1px solid var(--secondary-color); }
+        .game-container { background-color: var(--primary-color); padding: 20px; border-radius: var(--border-radius); box-shadow: var(--shadow); }
+        .game-controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 20px; background-color: var(--secondary-color); padding: 15px; border-radius: var(--border-radius); }
+        .game-controls .form-group { display: flex; flex-direction: column; }
+        .game-controls label { font-size: 13px; color: #aaa; margin-bottom: 5px; }
+        .game-controls input, .game-controls select { padding: 8px; background-color: var(--bg-color); border: 1px solid #444; border-radius: var(--border-radius); color: var(--text-color); max-width: 140px; font-size: 14px; }
+        
+        /* Compact Buttons */
+        .custom-button { padding: 9px 18px; background-color: var(--accent-color); color: var(--bg-color); border: none; border-radius: var(--border-radius); cursor: pointer; font-size: 14px; font-weight: bold; transition: all 0.2s; }
+        .modal-content button { padding: 10px 18px; }
+        .custom-button:hover { background-color: #e0e0e0; transform: translateY(-1px); }
+        .custom-button:disabled { background-color: #555; color: #888; cursor: not-allowed; transform: none; }
+        
+        /* Modal and Auth Forms */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-overlay.hidden { display: none; }
+        .modal-content { background-color: var(--primary-color); padding: 25px; border-radius: var(--border-radius); box-shadow: var(--shadow); width: 90%; max-width: 400px; text-align: center; }
+        .modal-content input { width: 100%; padding: 11px; margin-bottom: 12px; font-size: 15px; background-color: var(--secondary-color); border: 1px solid #444; border-radius: var(--border-radius); color: var(--text-color); }
+        .modal-content .switch-link { color: var(--accent-color); cursor: pointer; text-decoration: underline; margin-top: 15px; display: inline-block; font-size: 14px; }
+        .error-message { color: #ff5555; margin-bottom: 15px; min-height: 20px; text-align: left; font-size: 14px; }
+        .auth-options { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-size: 14px; color: #ccc; padding: 0 5px;}
+        .auth-options label { display: flex; align-items: center; cursor: pointer; }
+        .auth-options input[type="checkbox"] { margin-right: 8px; }
+
+        /* Chat and User List */
         .chat-container { display: flex; flex-direction: column; height: 50%; }
-        .chat-sidebar h3 { margin-top: 0; padding-bottom: 10px; border-bottom: 1px solid var(--secondary-color); }
+        .chat-sidebar h3 { margin: 0 0 10px 0; padding-bottom: 10px; border-bottom: 1px solid var(--secondary-color); font-size: 16px; }
         #online-users-list, #chat-messages { list-style: none; padding: 0; margin: 0; overflow-y: auto; flex-grow: 1; }
-        #online-users-list li { display: flex; align-items: center; padding: 8px; border-radius: 8px; transition: background-color 0.2s; cursor: pointer; }
+        #online-users-list li { display: flex; align-items: center; padding: 6px; border-radius: 8px; transition: background-color 0.2s; cursor: pointer; }
         #online-users-list li:hover { background-color: var(--secondary-color); }
-        #online-users-list img { width: 32px; height: 32px; border-radius: 50%; margin-right: 12px; object-fit: cover; flex-shrink: 0; }
+        #online-users-list img { width: 30px; height: 30px; border-radius: 50%; margin-right: 10px; object-fit: cover; flex-shrink: 0; }
         #online-users-list .user-details-list { flex-grow: 1; }
-        #online-users-list .username { font-weight: bold; }
-        #online-users-list .coins { font-size: 13px; color: #aaa; }
-        .message-item { display: flex; align-items: flex-start; padding: 8px 10px; margin-bottom: 8px; word-wrap: break-word; }
-        .message-item img { width: 36px; height: 36px; border-radius: 50%; margin-right: 12px; object-fit: cover; flex-shrink: 0; }
+        #online-users-list .username { font-weight: bold; font-size: 14px; }
+        #online-users-list .coins { font-size: 12px; color: #aaa; }
+        #chat-messages { padding-right: 5px; }
+        .message-item { display: flex; align-items: flex-start; padding: 6px 5px; margin-bottom: 6px; word-wrap: break-word; font-size: 14px; }
+        .message-item img { width: 32px; height: 32px; border-radius: 50%; margin-right: 10px; object-fit: cover; flex-shrink: 0; }
         .message-content { display: flex; flex-direction: column; flex-grow: 1; }
         .message-header { display: flex; align-items: center; }
         .message-user { font-weight: bold; cursor: pointer; color: var(--accent-color); }
-        .message-timestamp { font-size: 11px; color: #888; margin-left: 8px; }
+        .message-timestamp { font-size: 10px; color: #888; margin-left: 8px; }
         .delete-msg-btn { margin-left: auto; font-size: 14px; cursor: pointer; opacity: 0.5; transition: opacity 0.2s; }
         .message-item:hover .delete-msg-btn { opacity: 1; }
-        #chat-form { display: flex; margin-top: 15px; }
-        #chat-input { flex-grow: 1; padding: 12px; background-color: var(--secondary-color); border: 1px solid #444; border-radius: var(--border-radius); color: var(--text-color); }
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; z-index: 1000; }
-        .modal-overlay.hidden { display: none; }
-        .modal-content { background-color: var(--primary-color); padding: 30px; border-radius: var(--border-radius); box-shadow: var(--shadow); width: 90%; max-width: 450px; text-align: center; }
-        .modal-content input { width: 100%; padding: 12px; margin-bottom: 15px; background-color: var(--secondary-color); border: 1px solid #444; border-radius: var(--border-radius); color: var(--text-color); font-size: 16px; }
-        .modal-content button, .custom-button { padding: 12px 20px; background-color: var(--accent-color); color: var(--bg-color); border: none; border-radius: var(--border-radius); cursor: pointer; font-size: 16px; font-weight: bold; transition: all 0.2s; }
-        .modal-content button:hover, .custom-button:hover { background-color: #e0e0e0; }
-        .custom-button:disabled { background-color: #555; color: #888; cursor: not-allowed; }
-        .modal-content .switch-link { color: var(--accent-color); cursor: pointer; text-decoration: underline; margin-top: 15px; display: inline-block; }
-        .error-message { color: #ff5555; margin-bottom: 15px; min-height: 20px; text-align: left; }
-        #profile-page img, #public-profile-content img { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid var(--accent-color); margin-bottom: 20px; }
-        #profile-page .form-group, #public-profile-content .profile-info { text-align: left; margin-bottom: 20px; }
-        #profile-page .form-group label { display: block; margin-bottom: 8px; color: #aaa; }
-        #profile-page input, #profile-page textarea { width: 100%; padding: 12px; background-color: var(--secondary-color); border: 1px solid #444; border-radius: var(--border-radius); color: var(--text-color); }
-        #profile-page input[type="file"] { padding: 8px; background-color: var(--secondary-color); }
-        #profile-page textarea { min-height: 80px; resize: vertical; }
-        #public-profile-content .profile-info span { font-weight: bold; color: #aaa; font-size: 1.1em; }
-        #public-profile-content .profile-info p { margin-top: 5px; background-color: var(--secondary-color); padding: 12px; border-radius: var(--border-radius); white-space: pre-wrap; word-wrap: break-word; }
-        .game-container { background-color: var(--primary-color); padding: 25px; border-radius: var(--border-radius); box-shadow: var(--shadow); }
-        .game-controls { display: flex; flex-wrap: wrap; gap: 15px; align-items: center; margin-bottom: 25px; background-color: var(--secondary-color); padding: 20px; border-radius: var(--border-radius); }
-        .game-controls .form-group { display: flex; flex-direction: column; }
-        .game-controls label { font-size: 14px; color: #aaa; margin-bottom: 5px; }
-        .game-controls input, .game-controls select { padding: 10px; background-color: var(--bg-color); border: 1px solid #444; border-radius: var(--border-radius); color: var(--text-color); max-width: 150px; }
-        .game-area { text-align: center; }
-        .hand-container { margin: 20px 0; min-height: 150px; }
-        .hand-container h3 { margin-bottom: 15px; }
-        .cards { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
-        .card { width: 80px; height: 120px; background-color: var(--accent-color); color: var(--bg-color); border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 24px; font-weight: bold; position: relative; }
-        .card.hidden { background: repeating-linear-gradient(45deg, #4a4a4a, #4a4a4a 10px, #555 10px, #555 20px); }
-        .card span { position: absolute; font-size: 16px; } .card .top { top: 5px; left: 8px; } .card .bottom { bottom: 5px; right: 8px; transform: rotate(180deg); }
-        .game-status { font-size: 1.2em; font-weight: bold; min-height: 30px; margin-top: 20px; color: var(--accent-color); }
-        #bj-actions button { margin: 0 10px; }
-        .mines-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; max-width: 400px; margin: 20px auto; }
-        .mine-cell { width: 100%; padding-bottom: 100%; background-color: var(--secondary-color); border-radius: var(--border-radius); cursor: pointer; transition: background-color 0.2s; position: relative; }
-        .mine-cell:not(.disabled):hover { background-color: #444; }
-        .mine-cell.safe { background-color: var(--safe-color); } .mine-cell.mine { background-color: var(--mine-color); }
-        .mine-cell.disabled { pointer-events: none; opacity: 0.8; }
-        #mines-info { display: flex; justify-content: space-around; align-items: center; background: var(--secondary-color); padding: 15px; border-radius: var(--border-radius); margin-top: 20px; }
-        #mines-info div { text-align: center; } #mines-info span { display: block; font-size: 14px; color: #aaa; } #mines-info strong { font-size: 1.2em; }
+        #chat-form { display: flex; margin-top: 10px; }
+        #chat-input { flex-grow: 1; padding: 10px; background-color: var(--secondary-color); border: 1px solid #444; border-radius: var(--border-radius); color: var(--text-color); }
 
-        /* Roulette Styles */
-        #roulette-container { display: flex; flex-direction: column; align-items: center; gap: 30px;}
-        .roulette-wheel-container { position: relative; width: 300px; height: 300px; }
-        .roulette-wheel { width: 100%; height: 100%; border: 10px solid #a0522d; border-radius: 50%; background-color: #333; transition: transform 5s cubic-bezier(0.2, 0.8, 0.2, 1); position: relative; }
-        .wheel-slice { position: absolute; width: 50%; height: 100%; left: 50%; transform-origin: 0 50%; }
-        .wheel-number { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; font-size: 14px; font-weight: bold; transform: rotate(4.86deg); color: white; }
-        .wheel-marker { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 20px solid var(--accent-color); z-index: 5; }
-        .roulette-table { background-color: var(--secondary-color); padding: 15px; border-radius: var(--border-radius); width: 100%; max-width: 800px; }
-        .roulette-grid { display: grid; grid-template-columns: repeat(14, 1fr); gap: 5px; }
+        /* --- Beautiful Roulette Styles --- */
+        #roulette-tab { margin-top: -10px; } /* Move roulette section up */
+        #roulette-container { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+        .roulette-wheel-container { position: relative; width: 280px; height: 280px; margin-bottom: 10px; }
+        .wheel-marker { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-top: 18px solid var(--accent-color); z-index: 5; }
+        .roulette-wheel {
+            width: 100%; height: 100%; border: 8px solid #855d3a; border-radius: 50%;
+            background-image: conic-gradient(from 0deg, #333, #444, #333);
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5), 0 0 15px rgba(0,0,0,0.3);
+            position: relative; overflow: hidden;
+            transition: transform 5s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        .wheel-number {
+            position: absolute; top: 0; left: 50%; width: 50%; height: 50%;
+            transform-origin: 0 100%;
+            display: flex; justify-content: center; align-items: flex-start;
+            font-size: 14px; font-weight: bold; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+            padding-top: 10px;
+            clip-path: polygon(100% 0, 0 100%, 0 0);
+        }
+        .wheel-number > span { transform: rotate(-45deg) translate(15px, 15px); display: block; }
+        .wheel-number.red { background-color: var(--roulette-red); }
+        .wheel-number.black { background-color: var(--roulette-black); }
+        .wheel-number.green { background-color: var(--roulette-green); }
+        
+        .roulette-table { background-color: transparent; padding: 0; width: 100%; max-width: 750px; }
+        .roulette-grid { display: grid; grid-template-columns: repeat(14, 1fr); gap: 4px; }
         .roulette-cell {
             aspect-ratio: 1 / 1; display: flex; justify-content: center; align-items: center;
-            font-weight: bold; border-radius: 5px; cursor: pointer; transition: all 0.2s;
-            position: relative; overflow: hidden;
+            font-weight: bold; font-size: 13px; border-radius: 5px; cursor: pointer; transition: all 0.2s ease-out;
+            position: relative; overflow: hidden; background-color: var(--secondary-color);
         }
-        .roulette-cell:hover { transform: scale(1.1); z-index: 10; }
-        .roulette-cell.number { border: 1px solid #555; }
+        .roulette-cell:hover { transform: scale(1.15); z-index: 10; box-shadow: 0 0 10px rgba(255,255,255,0.2); }
         .roulette-cell.red { background-color: var(--roulette-red); color: white; }
         .roulette-cell.black { background-color: var(--roulette-black); color: white; }
         .roulette-cell.green { background-color: var(--roulette-green); color: white; grid-column: 1 / 15; }
-        .roulette-cell.outside { background-color: #3a3a3a; grid-column: span 2; }
-        .roulette-cell.outside-4 { background-color: #3a3a3a; grid-column: span 4; }
-        .roulette-cell.outside-6 { background-color: #3a3a3a; grid-column: span 6; }
-        .roulette-cell.col-header { background-color: transparent; border: none; cursor: default; }
+        .roulette-cell.outside { grid-column: span 2; font-size: 11px; }
+        .roulette-cell.outside-4 { grid-column: span 4; font-size: 11px; }
+        .roulette-cell.outside-6 { grid-column: span 6; font-size: 11px; }
         .roulette-cell .bet-chip {
-            position: absolute; bottom: 2px; right: 2px; background-color: rgba(255, 255, 0, 0.8);
-            color: black; font-size: 10px; padding: 2px 4px; border-radius: 50%; font-weight: bold;
+            position: absolute; bottom: 3px; right: 3px; width: 16px; height: 16px;
+            background-color: #ffeb3b; color: black; font-size: 9px;
+            border-radius: 50%; font-weight: bold; display: flex;
+            justify-content: center; align-items: center;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
             display: none;
         }
-        .roulette-cell.has-bet .bet-chip { display: block; }
-        .roulette-controls { display: flex; align-items: center; justify-content: center; gap: 20px; margin-top: 20px; }
-        .roulette-controls .form-group { flex-direction: row; align-items: center; gap: 10px; }
+        .roulette-cell.has-bet .bet-chip { display: flex; }
+        .roulette-controls { justify-content: center; }
+
+        /* Other game styles... (Blackjack, Mines, Profile etc.) */
+        #profile-page img, #public-profile-content img { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid var(--accent-color); margin-bottom: 20px; }
+        #blackjack-game-area .cards { min-height: 125px; }
+        .card { width: 75px; height: 110px; font-size: 22px; }
+        .mines-grid { max-width: 350px; }
     </style>
 </head>
 <body>
     <div id="auth-modal" class="modal-overlay">
         <div class="modal-content">
-            <div id="login-form"><h2>Login to Ghosts Gambling</h2><div class="error-message" id="login-error"></div><input type="text" id="login-username" placeholder="Username" required><input type="password" id="login-password" placeholder="Password" required><button id="login-btn">Login</button><p>Don't have an account? <span class="switch-link" onclick="toggleAuthForms()">Register here</span></p></div>
-            <div id="register-form" style="display: none;"><h2>Register Account</h2><div class="error-message" id="register-error"></div><input type="text" id="register-username" placeholder="Username" required><input type="password" id="register-password" placeholder="Password (min 4 chars)" required><button id="register-btn">Register</button><p>Already have an account? <span class="switch-link" onclick="toggleAuthForms()">Login here</span></p></div>
+            <div id="login-form">
+                <h2>Login</h2>
+                <div class="error-message" id="login-error"></div>
+                <input type="text" id="login-username" placeholder="Username" required>
+                <input type="password" id="login-password" placeholder="Password" required>
+                <div class="auth-options">
+                    <label for="remember-me"><input type="checkbox" id="remember-me" checked> Remember Session</label>
+                </div>
+                <button id="login-btn" class="custom-button">Login</button>
+                <p>Don't have an account? <span class="switch-link" onclick="toggleAuthForms()">Register here</span></p>
+            </div>
+            <div id="register-form" style="display: none;">
+                <h2>Register</h2>
+                <div class="error-message" id="register-error"></div>
+                <input type="text" id="register-username" placeholder="Username" required>
+                <input type="password" id="register-password" placeholder="Password (min 4 chars)" required>
+                <button id="register-btn" class="custom-button">Register</button>
+                <p>Already have an account? <span class="switch-link" onclick="toggleAuthForms()">Login here</span></p>
+            </div>
         </div>
     </div>
     <div id="public-profile-modal" class="modal-overlay hidden"><div id="public-profile-content" class="modal-content"></div></div>
+    
     <div id="app-container">
         <aside class="sidebar">
             <div class="logo">Ghosts Gambling</div>
-            <nav class="nav-menu"><button class="nav-tab active" data-tab="home">Home</button><button class="nav-tab" data-tab="blackjack">Blackjack</button><button class="nav-tab" data-tab="mines">Mines</button><button class="nav-tab" data-tab="roulette">Roulette</button></nav>
+            <nav class="nav-menu">
+                <button class="nav-tab active" data-tab="home">Home</button>
+                <button class="nav-tab" data-tab="blackjack">Blackjack</button>
+                <button class="nav-tab" data-tab="mines">Mines</button>
+                <button class="nav-tab" data-tab="roulette">Roulette</button>
+            </nav>
             <div class="user-info">
-                <div class="user-info-header"><div class="user-details"><img id="user-pfp-display" src="" alt="PFP"><div><div id="username-display"></div><div id="coins-display"></div></div></div><button id="menu-button">☰</button></div>
+                <div class="user-info-header">
+                    <div class="user-details"><img id="user-pfp-display" src="" alt="PFP"><div><div id="username-display"></div><div id="coins-display"></div></div></div>
+                    <button id="menu-button">☰</button>
+                </div>
                 <div class="dropdown-menu" id="dropdown-menu"><a href="#" id="profile-btn">Profile</a><a href="#" id="logout-btn">Logout</a></div>
             </div>
         </aside>
@@ -156,6 +190,7 @@
             <div id="profile-page" class="tab-content"><h1>Edit Profile</h1><img id="profile-pfp-preview" src="" alt="Your PFP"><div class="form-group"><label for="profile-pfp-upload">Upload New Profile Picture</label><input type="file" id="profile-pfp-upload" accept="image/jpeg, image/png, image/gif"><small style="color:#aaa; margin-top:5px; display:block;">Max 25MB. Your old picture will be replaced.</small></div><div class="form-group"><label for="profile-bio">Bio</label><textarea id="profile-bio" placeholder="Tell everyone a little about yourself..."></textarea></div><button id="save-profile-btn" class="custom-button">Save Changes</button></div>
             <div id="blackjack-tab" class="tab-content"><div class="game-container"><div id="bj-controls" class="game-controls"><div class="form-group"><label for="bj-bet-amount">Bet</label><input type="number" id="bj-bet-amount" value="100"></div><button id="bj-start-btn" class="custom-button">Start</button></div><div id="blackjack-game-area" class="game-area" style="display: none;"><div class="hand-container"><h3>Dealer (<span id="dealer-score">0</span>)</h3><div class="cards" id="dealer-cards"></div></div><div class="game-status" id="bj-status"></div><div id="bj-actions" class="hand-container"><h3>You (<span id="player-score">0</span>)</h3><div class="cards" id="player-cards"></div><div style="margin-top: 20px;"><button id="bj-hit-btn" class="custom-button">Hit</button><button id="bj-stand-btn" class="custom-button">Stand</button></div></div></div></div></div>
             <div id="mines-tab" class="tab-content"><div class="game-container"><div class="game-controls"><div class="form-group"><label for="mines-bet-amount">Bet</label><input type="number" id="mines-bet-amount" value="100"></div><div class="form-group"><label for="mines-count">Mines</label><select id="mines-count" class="game-controls input"><option value="3">3</option><option value="5">5</option><option value="8">8</option><option value="10">10</option></select></div><button id="mines-start-btn" class="custom-button">Start</button></div><div id="mines-game-area" style="display: none;"><div class="mines-grid" id="mines-grid"></div><div id="mines-info"><div><span>Profit</span><strong id="mines-profit">0</strong></div><div><span>Next Tile</span><strong id="mines-next-profit">0</strong></div><button id="mines-cashout-btn" class="custom-button" disabled>Cashout</button></div></div></div></div>
+
             <div id="roulette-tab" class="tab-content">
                 <div class="game-container" id="roulette-container">
                     <h1>Roulette</h1>
@@ -178,67 +213,59 @@
                 </div>
             </div>
         </main>
-        <aside class="chat-sidebar"><div class="chat-container"><h3>Online</h3><ul id="online-users-list"></ul></div><div class="chat-container"><h3>Chat</h3><ul id="chat-messages"></ul><form id="chat-form"><input id="chat-input" autocomplete="off" placeholder="Say something..." /></form></div></aside>
+        <aside class="chat-sidebar">
+            <div class="chat-container"><h3>Online</h3><ul id="online-users-list"></ul></div>
+            <div class="chat-container"><h3>Chat</h3><ul id="chat-messages"></ul><form id="chat-form"><input id="chat-input" autocomplete="off" placeholder="Say something..." /></form></div>
+        </aside>
     </div>
+
     <script>
     document.addEventListener('DOMContentLoaded', () => {
         let token = null, socket = null, currentUser = null;
         let newPfpBase64 = null;
         const $ = s => document.querySelector(s), $$ = s => document.querySelectorAll(s);
-        const apiCall = async (endpoint, options = {}) => { options.headers = { ...options.headers, 'Content-Type': 'application/json', 'Accept': 'application/json' }; if (token) options.headers['Authorization'] = `Bearer ${token}`; const response = await fetch(`/api${endpoint}`, options); if (!response.ok) { let err; try { const d = await response.json(); err = d.message; } catch (e) { err = await response.text(); } throw new Error(err || 'An unknown error occurred.'); } if (response.status === 204 || response.headers.get("content-length") === "0") return null; return response.json(); };
+
+        const apiCall = async (endpoint, options = {}) => { options.headers = { ...options.headers, 'Content-Type': 'application/json', 'Accept': 'application/json' }; if (token) options.headers['Authorization'] = `Bearer ${token}`; const response = await fetch(`/api${endpoint}`, options); if (!response.ok) { if (response.status === 401) { logout(false); } let err; try { const d = await response.json(); err = d.message; } catch (e) { err = await response.text(); } throw new Error(err || 'An unknown error occurred.'); } if (response.status === 204 || response.headers.get("content-length") === "0") return null; return response.json(); };
         window.toggleAuthForms = () => { $('#login-form').style.display = $('#login-form').style.display === 'none' ? 'block' : 'none'; $('#register-form').style.display = $('#register-form').style.display === 'none' ? 'block' : 'none'; $('#login-error').textContent = ''; $('#register-error').textContent = ''; };
+        
         $('#register-btn').addEventListener('click', async () => { try { const data = await apiCall('/register', { method: 'POST', body: JSON.stringify({ username: $('#register-username').value, password: $('#register-password').value }) }); alert(data.message); toggleAuthForms(); } catch (err) { $('#register-error').textContent = err.message; } });
-        $('#login-btn').addEventListener('click', async () => { try { const data = await apiCall('/login', { method: 'POST', body: JSON.stringify({ username: $('#login-username').value, password: $('#login-password').value }) }); token = data.token; initializeApp(); } catch (err) { $('#login-error').textContent = err.message; } });
-        $('#logout-btn').addEventListener('click', () => { token = null; currentUser = null; if (socket) socket.disconnect(); window.location.reload(); });
-        async function initializeApp() { $('#auth-modal').style.display = 'none'; $('#app-container').style.display = 'flex'; await fetchProfile(); setupWebSocket(); setupUIEventListeners(); switchTab('home'); }
-        async function fetchProfile() { try { currentUser = await apiCall('/profile'); updateUserUI(); } catch (err) { console.error(err); } }
+        $('#login-btn').addEventListener('click', async () => { const username = $('#login-username').value; const password = $('#login-password').value; try { const data = await apiCall('/login', { method: 'POST', body: JSON.stringify({ username, password }) }); token = data.token; if ($('#remember-me').checked) { localStorage.setItem('authToken', token); } else { sessionStorage.setItem('authToken', token); } localStorage.setItem('lastUsername', username); initializeApp(); } catch (err) { $('#login-error').textContent = err.message; } });
+        function logout(reload = true) { token = null; currentUser = null; localStorage.removeItem('authToken'); sessionStorage.removeItem('authToken'); if (socket) socket.disconnect(); if (reload) { window.location.reload(); } else { $('#auth-modal').style.display = 'flex'; $('#app-container').style.display = 'none'; } }
+        $('#logout-btn').addEventListener('click', () => logout(true));
+
+        async function initializeApp() { $('#auth-modal').style.display = 'none'; $('#app-container').style.display = 'flex'; try { await fetchProfile(); setupWebSocket(); setupUIEventListeners(); switchTab('home'); } catch (error) { console.error("Initialization failed:", error.message); logout(false); } }
+        function checkForSavedSession() { token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken'); const lastUsername = localStorage.getItem('lastUsername'); if(lastUsername) { $('#login-username').value = lastUsername; } if (token) { initializeApp(); } else { $('#auth-modal').style.display = 'flex'; } }
+        async function fetchProfile() { currentUser = await apiCall('/profile'); updateUserUI(); }
         function updateUserUI() { if (!currentUser) return; $('#username-display').textContent = currentUser.username; $('#coins-display').textContent = `${currentUser.coins.toLocaleString()} coins`; $('#user-pfp-display').src = currentUser.pfp; }
+        
+        function setupWebSocket() { if (socket) socket.disconnect(); socket = io({ auth: { token } }); socket.on('connect_error', (err) => { console.error("Socket connection error:", err.message); logout(false); }); socket.on('online_users', users => { let l = ''; users.sort((a,b) => b.coins - a.coins).forEach(u => { l += `<li data-username="${u.username}"><img src="${u.pfp}" alt="${u.username}"><div class="user-details-list"><div class="username">${u.username}</div><div class="coins">${u.coins.toLocaleString()} coins</div></div></li>`; }); $('#online-users-list').innerHTML = l; }); socket.on('chat_history', msgs => { $('#chat-messages').innerHTML = ''; msgs.forEach(addChatMessage); }); socket.on('chat_message', addChatMessage); socket.on('message_deleted', messageId => { const msgEl = $(`[data-message-id="${messageId}"]`); if (msgEl) msgEl.remove(); }); $('#chat-form').addEventListener('submit', e => { e.preventDefault(); if ($('#chat-input').value) { socket.emit('chat_message', $('#chat-input').value); $('#chat-input').value = ''; } }); }
 
-        function setupWebSocket() {
-            if (socket) socket.disconnect();
-
-            socket = io({ auth: { token } });
-
-            socket.on('connect_error', (err) => {
-                console.error("Socket connection error:", err.message);
-                alert("Real-time connection failed. Please refresh the page.");
-            });
-
-            socket.on('online_users', users => { let l = ''; users.sort((a,b) => b.coins - a.coins).forEach(u => { l += `<li data-username="${u.username}"><img src="${u.pfp}" alt="${u.username}"><div class="user-details-list"><div class="username">${u.username}</div><div class="coins">${u.coins.toLocaleString()} coins</div></div></li>`; }); $('#online-users-list').innerHTML = l; });
-            socket.on('chat_history', msgs => { $('#chat-messages').innerHTML = ''; msgs.forEach(addChatMessage); });
-            socket.on('chat_message', addChatMessage);
-            socket.on('message_deleted', messageId => { const msgEl = $(`[data-message-id="${messageId}"]`); if (msgEl) msgEl.remove(); });
-            $('#chat-form').addEventListener('submit', e => { e.preventDefault(); if ($('#chat-input').value) { socket.emit('chat_message', $('#chat-input').value); $('#chat-input').value = ''; } });
-        }
-
-        function addChatMessage(msg) { const cb = $('#chat-messages'); const isOwnMessage = msg.username === currentUser.username; const fiveMinutes = 5 * 60 * 1000; const isDeletable = isOwnMessage && (Date.now() - new Date(msg.timestamp).getTime() < fiveMinutes); const deleteButton = isDeletable ? `<span class="delete-msg-btn" data-message-id="${msg._id}" title="Delete message">🗑️</span>` : ''; cb.innerHTML += `<li class="message-item" data-message-id="${msg._id}"><img src="${msg.pfp || 'https://i.imgur.com/8bzvETr.png'}" alt="${msg.username}"><div class="message-content"><div class="message-header"><span class="message-user" data-username="${msg.username}">${msg.username}</span><span class="message-timestamp">${new Date(msg.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>${deleteButton}</div><div>${msg.message.replace(/</g, "<").replace(/>/g, ">")}</div></div></li>`; cb.scrollTop = cb.scrollHeight; }
+        function addChatMessage(msg) { const cb = $('#chat-messages'); const isOwnMessage = msg.username === currentUser.username; const fiveMinutes = 5 * 60 * 1000; const isDeletable = isOwnMessage && (Date.now() - new Date(msg.timestamp).getTime() < fiveMinutes); const deleteButton = isDeletable ? `<span class="delete-msg-btn" data-message-id="${msg._id}" title="Delete message">🗑️</span>` : ''; const escapedMsg = msg.message.replace(/</g, "<").replace(/>/g, ">"); cb.innerHTML += `<li class="message-item" data-message-id="${msg._id}"><img src="${msg.pfp || 'https://i.imgur.com/8bzvETr.png'}" alt="${msg.username}"><div class="message-content"><div class="message-header"><span class="message-user" data-username="${msg.username}">${msg.username}</span><span class="message-timestamp">${new Date(msg.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>${deleteButton}</div><div>${escapedMsg}</div></div></li>`; cb.scrollTop = cb.scrollHeight; }
+        
         function setupUIEventListeners() {
             $$('.nav-tab').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
-            $('#menu-button').addEventListener('click', () => { $('#dropdown-menu').style.display = $('#dropdown-menu').style.display === 'block' ? 'none' : 'block'; });
-            document.addEventListener('click', e => { if (!$('#menu-button').contains(e.target) && !$('#dropdown-menu').contains(e.target)) $('#dropdown-menu').style.display = 'none'; });
-            $('#profile-btn').addEventListener('click', e => { e.preventDefault(); switchTab('profile-page'); loadProfileForEditing(); $('#dropdown-menu').style.display = 'none'; });
+            $('#menu-button').addEventListener('click', (e) => { e.stopPropagation(); $('#dropdown-menu').style.display = $('#dropdown-menu').style.display === 'block' ? 'none' : 'block'; });
+            document.addEventListener('click', () => { $('#dropdown-menu').style.display = 'none'; });
+            $('#profile-btn').addEventListener('click', e => { e.preventDefault(); switchTab('profile-page'); loadProfileForEditing(); });
             $('#save-profile-btn').addEventListener('click', saveProfile);
+            
             const eventDelegate = (container, event, selector, handler) => { container.addEventListener(event, e => { if (e.target.closest(selector)) handler(e, e.target.closest(selector)); }); };
             eventDelegate($('#chat-messages'), 'click', '.message-user', (e, el) => showPublicProfile(el.dataset.username));
             eventDelegate($('#chat-messages'), 'click', '.delete-msg-btn', (e, el) => socket.emit('delete_message', el.dataset.messageId));
             eventDelegate($('#online-users-list'), 'click', 'li', (e, el) => showPublicProfile(el.dataset.username));
             $('#public-profile-modal').addEventListener('click', e => { if (e.target.id === 'public-profile-modal') e.target.classList.add('hidden'); });
             $('#profile-pfp-upload').addEventListener('change', handlePfpUpload);
+            
             setupBlackjackListeners();
             setupMinesListeners();
             setupRouletteListeners();
         }
+
         function switchTab(id) { $$('.tab-content').forEach(t => t.classList.remove('active')); $$('.nav-tab').forEach(b => b.classList.remove('active')); const el = $(`#${id}-tab`) || $(`#${id}`); if (el) el.classList.add('active'); const nb = $(`.nav-tab[data-tab="${id}"]`); if (nb) nb.classList.add('active'); }
         function loadProfileForEditing() { $('#profile-pfp-preview').src = currentUser.pfp; $('#profile-bio').value = currentUser.bio; newPfpBase64 = null; $('#profile-pfp-upload').value = ''; }
-        function handlePfpUpload(event) {
-            const file = event.target.files[0]; if (!file) return;
-            if (file.size > 25 * 1024 * 1024) { alert("File is too large! Max 25MB."); return; }
-            const reader = new FileReader();
-            reader.onload = (e) => { newPfpBase64 = e.target.result; $('#profile-pfp-preview').src = newPfpBase64; };
-            reader.readAsDataURL(file);
-        }
+        function handlePfpUpload(event) { const file = event.target.files[0]; if (!file) return; if (file.size > 25 * 1024 * 1024) { alert("File is too large! Max 25MB."); return; } const reader = new FileReader(); reader.onload = (e) => { newPfpBase64 = e.target.result; $('#profile-pfp-preview').src = newPfpBase64; }; reader.readAsDataURL(file); }
         async function saveProfile() { try { const payload = { bio: $('#profile-bio').value }; if (newPfpBase64) payload.pfp = newPfpBase64; await apiCall('/profile/update', { method: 'POST', body: JSON.stringify(payload) }); await fetchProfile(); alert('Profile updated!'); switchTab('home'); } catch (err) { alert(err.message); } }
-        async function showPublicProfile(u) { try { const d = await apiCall(`/user/${u}`); $('#public-profile-content').innerHTML = `<img src="${d.pfp}" alt="PFP"><h2>${d.username}</h2><div class="profile-info"><span>Bio:</span><p>${d.bio || 'No bio set.'}</p></div><button onclick="document.getElementById('public-profile-modal').classList.add('hidden')">Close</button>`; $('#public-profile-modal').classList.remove('hidden'); } catch(err) { alert(err.message); } }
+        async function showPublicProfile(u) { try { const d = await apiCall(`/user/${u}`); $('#public-profile-content').innerHTML = `<img src="${d.pfp}" alt="PFP"><h2>${d.username}</h2><div class="profile-info"><span>Bio:</span><p>${d.bio || 'No bio set.'}</p></div><button class="custom-button" onclick="document.getElementById('public-profile-modal').classList.add('hidden')">Close</button>`; $('#public-profile-modal').classList.remove('hidden'); } catch(err) { alert(err.message); } }
         const createCardHTML = c => { if (c.value === '?') return `<div class="card hidden"></div>`; const s = {H:'♥',D:'♦',C:'♣',S:'♠'}; const r = ['H','D'].includes(c.suit); return `<div class="card" style="color:${r?'red':'black'};"><span class="top">${c.value}${s[c.suit]}</span>${c.value}<span class="bottom">${c.value}${s[c.suit]}</span></div>`; };
         function updateBlackjackUI(g) { $('#player-cards').innerHTML = g.playerHand.map(createCardHTML).join(''); $('#dealer-cards').innerHTML = g.dealerHand.map(createCardHTML).join(''); $('#player-score').textContent = g.playerValue; $('#dealer-score').textContent = g.dealerValue || '?'; $('#bj-status').textContent = g.status; if (typeof g.newBalance !== 'undefined') { currentUser.coins = g.newBalance; updateUserUI(); } const p = g.status === 'playing'; $('#bj-hit-btn').style.display = p?'inline-block':'none'; $('#bj-stand-btn').style.display = p?'inline-block':'none'; $('#bj-start-btn').disabled = p; }
         function setupBlackjackListeners() { $('#bj-start-btn').addEventListener('click', async () => { try { $('#blackjack-game-area').style.display = 'block'; const g = await apiCall('/blackjack/start', { method: 'POST', body: JSON.stringify({ bet: parseInt($('#bj-bet-amount').value) }) }); updateBlackjackUI(g); } catch(err) { alert(err.message); } }); const doAction = async (a) => { try { $('#bj-hit-btn').disabled = true; $('#bj-stand-btn').disabled = true; const g = await apiCall('/blackjack/action', { method: 'POST', body: JSON.stringify({ action: a }) }); updateBlackjackUI(g); $('#bj-hit-btn').disabled = false; $('#bj-stand-btn').disabled = false; } catch(err) { alert(err.message); } }; $('#bj-hit-btn').addEventListener('click', () => doAction('hit')); $('#bj-stand-btn').addEventListener('click', () => doAction('stand')); }
@@ -253,176 +280,15 @@
         const ROULETTE_COLORS = { 0: 'green', 1: 'red', 2: 'black', 3: 'red', 4: 'black', 5: 'red', 6: 'black', 7: 'red', 8: 'black', 9: 'red', 10: 'black', 11: 'black', 12: 'red', 13: 'black', 14: 'red', 15: 'black', 16: 'red', 17: 'black', 18: 'red', 19: 'red', 20: 'black', 21: 'red', 22: 'black', 23: 'red', 24: 'black', 25: 'red', 26: 'black', 27: 'red', 28: 'black', 29: 'black', 30: 'red', 31: 'black', 32: 'red', 33: 'black', 34: 'red', 35: 'black', 36: 'red' };
         let rouletteBets = {};
         let isSpinning = false;
+        function createRouletteTable() { const grid = $('#roulette-grid'); grid.innerHTML = ''; const zeroCell = document.createElement('div'); zeroCell.className = 'roulette-cell green'; zeroCell.textContent = '0'; zeroCell.dataset.betType = 'number'; zeroCell.dataset.betValue = '0'; grid.appendChild(zeroCell); for (let i = 1; i <= 36; i++) { const cell = document.createElement('div'); cell.className = `roulette-cell ${ROULETTE_COLORS[i]}`; cell.style.gridRow = (3 - (i-1) % 3); cell.style.gridColumn = Math.ceil(i/3) + 1; cell.textContent = i; cell.dataset.betType = 'number'; cell.dataset.betValue = i; grid.appendChild(cell); } const outsideBets = [ { label: '1-18', type: 'range', value: '1-18', span: 'outside-6' }, { label: 'Even', type: 'parity', value: 'even', span: 'outside-6' }, { label: 'Red', type: 'color', value: 'red', span: 'outside-6', color: 'red'}, { label: 'Black', type: 'color', value: 'black', span: 'outside-6', color: 'black'}, { label: 'Odd', type: 'parity', value: 'odd', span: 'outside-6' }, { label: '19-36', type: 'range', value: '19-36', span: 'outside-6' }, { label: '1st 12', type: 'dozen', value: '1st', span: 'outside-4' }, { label: '2nd 12', type: 'dozen', value: '2nd', span: 'outside-4' }, { label: '3rd 12', type: 'dozen', value: '3rd', span: 'outside-4' }, { label: 'Col 1', type: 'column', value: '1st', span: 'outside-4' }, { label: 'Col 2', type: 'column', value: '2nd', span: 'outside-4' }, { label: 'Col 3', type: 'column', value: '3rd', span: 'outside-4' }, ]; outsideBets.forEach(bet => { const cell = document.createElement('div'); cell.className = `roulette-cell ${bet.span}`; cell.textContent = bet.label; cell.dataset.betType = bet.type; cell.dataset.betValue = bet.value; if (bet.color) cell.classList.add(bet.color); grid.appendChild(cell); }); $$('.roulette-cell').forEach(cell => cell.innerHTML += '<span class="bet-chip"></span>'); }
+        function createRouletteWheel() { const wheel = $('#roulette-wheel'); wheel.innerHTML = ''; const sliceAngle = 360 / ROULETTE_NUMBERS.length; ROULETTE_NUMBERS.forEach((num, index) => { const slice = document.createElement('div'); slice.className = `wheel-number ${ROULETTE_COLORS[num]}`; slice.style.transform = `rotate(${index * sliceAngle}deg)`; const numberText = document.createElement('span'); numberText.textContent = num; slice.appendChild(numberText); wheel.appendChild(slice); }); }
+        function handleRouletteBet(e) { if (isSpinning) return; const cell = e.target.closest('.roulette-cell'); if (!cell || !cell.dataset.betType) return; const betAmount = parseInt($('#roulette-bet-amount').value, 10); if (isNaN(betAmount) || betAmount <= 0) { alert("Please enter a valid bet amount."); return; } const { betType, betValue } = cell.dataset; rouletteBets[betType] = rouletteBets[betType] || {}; rouletteBets[betType][betValue] = (rouletteBets[betType][betValue] || 0) + betAmount; updateRouletteUI(); }
+        function updateRouletteUI() { let totalBet = 0; $$('.roulette-cell').forEach(cell => { cell.classList.remove('has-bet'); const chip = cell.querySelector('.bet-chip'); if(chip) { chip.textContent = ''; chip.style.display = 'none'; } }); for (const type in rouletteBets) { for (const value in rouletteBets[type]) { const amount = rouletteBets[type][value]; totalBet += amount; const cell = $(`.roulette-cell[data-bet-type="${type}"][data-bet-value="${value}"]`); if (cell) { cell.classList.add('has-bet'); const chip = cell.querySelector('.bet-chip'); if (chip) { chip.textContent = amount > 999 ? '1k+' : amount; chip.style.display = 'flex'; } } } } $('#roulette-spin-btn').disabled = totalBet === 0 || isSpinning; }
+        function clearRouletteBets() { if(isSpinning) return; rouletteBets = {}; $('#roulette-status').textContent = 'Place your bets!'; $('#roulette-status').style.color = 'var(--accent-color)'; updateRouletteUI(); }
+        async function spinRouletteWheel() { if (Object.keys(rouletteBets).length === 0) { alert("Please place a bet first."); return; } isSpinning = true; updateRouletteUI(); $('#roulette-status').textContent = 'Spinning...'; try { const result = await apiCall('/roulette/spin', { method: 'POST', body: JSON.stringify({ bets: rouletteBets }) }); const { winningNumber, winnings, newBalance, message } = result; const wheel = $('#roulette-wheel'); const numberIndex = ROULETTE_NUMBERS.indexOf(winningNumber); const sliceAngle = 360 / ROULETTE_NUMBERS.length; const targetAngle = -(numberIndex * sliceAngle); const randomOffset = (Math.random() - 0.5) * (sliceAngle * 0.8); const currentRotation = parseFloat(wheel.style.transform.replace(/[^0-9.-]/g, '') || 0); const finalAngle = (Math.floor(currentRotation / 360) + 10) * 360 + targetAngle + randomOffset; wheel.style.transform = `rotate(${finalAngle}deg)`; setTimeout(() => { isSpinning = false; currentUser.coins = newBalance; updateUserUI(); $('#roulette-status').textContent = message; $('#roulette-status').style.color = winnings > 0 ? 'var(--safe-color)' : 'var(--mine-color)'; clearRouletteBets(); }, 5100); } catch (err) { alert(err.message); isSpinning = false; clearRouletteBets(); updateRouletteUI(); } }
+        function setupRouletteListeners() { createRouletteTable(); createRouletteWheel(); $('#roulette-grid').addEventListener('click', handleRouletteBet); $('#roulette-clear-btn').addEventListener('click', clearRouletteBets); $('#roulette-spin-btn').addEventListener('click', spinRouletteWheel); }
         
-        function createRouletteTable() {
-            const grid = $('#roulette-grid');
-            grid.innerHTML = '';
-            const zeroCell = document.createElement('div');
-            zeroCell.className = 'roulette-cell number green';
-            zeroCell.textContent = '0';
-            zeroCell.dataset.betType = 'number';
-            zeroCell.dataset.betValue = '0';
-            grid.appendChild(zeroCell);
-
-            for (let i = 1; i <= 36; i++) {
-                const cell = document.createElement('div');
-                cell.className = `roulette-cell number ${ROULETTE_COLORS[i]}`;
-                cell.style.gridRow = (3 - (i-1) % 3);
-                cell.style.gridColumn = Math.ceil(i/3) + 1;
-                cell.textContent = i;
-                cell.dataset.betType = 'number';
-                cell.dataset.betValue = i;
-                grid.appendChild(cell);
-            }
-            
-            const outsideBets = [
-                { label: '1-18', type: 'range', value: '1-18', span: 'outside-6' },
-                { label: 'Even', type: 'parity', value: 'even', span: 'outside-6' },
-                { label: 'Red', type: 'color', value: 'red', span: 'outside-6', color: 'red'},
-                { label: 'Black', type: 'color', value: 'black', span: 'outside-6', color: 'black'},
-                { label: 'Odd', type: 'parity', value: 'odd', span: 'outside-6' },
-                { label: '19-36', type: 'range', value: '19-36', span: 'outside-6' },
-                { label: '1st 12', type: 'dozen', value: '1st', span: 'outside-4' },
-                { label: '2nd 12', type: 'dozen', value: '2nd', span: 'outside-4' },
-                { label: '3rd 12', type: 'dozen', value: '3rd', span: 'outside-4' },
-                { label: 'Col 1', type: 'column', value: '1st', span: 'outside-4' },
-                { label: 'Col 2', type: 'column', value: '2nd', span: 'outside-4' },
-                { label: 'Col 3', type: 'column', value: '3rd', span: 'outside-4' },
-            ];
-            
-            outsideBets.forEach(bet => {
-                const cell = document.createElement('div');
-                cell.className = `roulette-cell ${bet.span}`;
-                cell.textContent = bet.label;
-                cell.dataset.betType = bet.type;
-                cell.dataset.betValue = bet.value;
-                if (bet.color) cell.classList.add(bet.color);
-                grid.appendChild(cell);
-            });
-            $$('.roulette-cell').forEach(cell => cell.innerHTML += '<span class="bet-chip"></span>');
-        }
-
-        function createRouletteWheel() {
-            const wheel = $('#roulette-wheel');
-            wheel.innerHTML = '';
-            const sliceAngle = 360 / ROULETTE_NUMBERS.length;
-            ROULETTE_NUMBERS.forEach((num, index) => {
-                const slice = document.createElement('div');
-                slice.className = 'wheel-slice';
-                slice.style.transform = `rotate(${index * sliceAngle}deg)`;
-                
-                const numberDiv = document.createElement('div');
-                numberDiv.className = `wheel-number ${ROULETTE_COLORS[num]}`;
-                numberDiv.textContent = num;
-                
-                slice.appendChild(numberDiv);
-                wheel.appendChild(slice);
-            });
-        }
-
-        function handleRouletteBet(e) {
-            if (isSpinning) return;
-            const cell = e.target.closest('.roulette-cell');
-            if (!cell || !cell.dataset.betType) return;
-
-            const betAmount = parseInt($('#roulette-bet-amount').value, 10);
-            if (isNaN(betAmount) || betAmount <= 0) {
-                alert("Please enter a valid bet amount.");
-                return;
-            }
-
-            const { betType, betValue } = cell.dataset;
-            rouletteBets[betType] = rouletteBets[betType] || {};
-            rouletteBets[betType][betValue] = (rouletteBets[betType][betValue] || 0) + betAmount;
-            
-            updateRouletteUI();
-        }
-
-        function updateRouletteUI() {
-            let totalBet = 0;
-            $$('.roulette-cell').forEach(cell => {
-                cell.classList.remove('has-bet');
-                cell.querySelector('.bet-chip').textContent = '';
-                cell.querySelector('.bet-chip').style.display = 'none';
-            });
-
-            for (const type in rouletteBets) {
-                for (const value in rouletteBets[type]) {
-                    const amount = rouletteBets[type][value];
-                    totalBet += amount;
-                    const cell = $(`.roulette-cell[data-bet-type="${type}"][data-bet-value="${value}"]`);
-                    if (cell) {
-                        cell.classList.add('has-bet');
-                        cell.querySelector('.bet-chip').textContent = amount.toLocaleString();
-                        cell.querySelector('.bet-chip').style.display = 'block';
-                    }
-                }
-            }
-            $('#roulette-spin-btn').disabled = totalBet === 0 || isSpinning;
-        }
-        
-        function clearRouletteBets() {
-            if(isSpinning) return;
-            rouletteBets = {};
-            $('#roulette-status').textContent = 'Place your bets!';
-             $('#roulette-status').style.color = 'var(--accent-color)';
-            updateRouletteUI();
-        }
-        
-        async function spinRouletteWheel() {
-            if (Object.keys(rouletteBets).length === 0) {
-                alert("Please place a bet first.");
-                return;
-            }
-            isSpinning = true;
-            updateRouletteUI();
-            $('#roulette-status').textContent = 'Spinning...';
-
-            try {
-                const result = await apiCall('/roulette/spin', {
-                    method: 'POST',
-                    body: JSON.stringify({ bets: rouletteBets })
-                });
-
-                const { winningNumber, winnings, newBalance, message } = result;
-                
-                const wheel = $('#roulette-wheel');
-                const numberIndex = ROULETTE_NUMBERS.indexOf(winningNumber);
-                const sliceAngle = 360 / ROULETTE_NUMBERS.length;
-                const targetAngle = -(numberIndex * sliceAngle);
-                const randomOffset = (Math.random() - 0.5) * (sliceAngle * 0.8);
-                const finalAngle = 360 * 10 + targetAngle + randomOffset;
-
-                wheel.style.transition = 'transform 5s cubic-bezier(0.2, 0.8, 0.2, 1)';
-                wheel.style.transform = `rotate(${finalAngle}deg)`;
-
-                setTimeout(() => {
-                    isSpinning = false;
-                    currentUser.coins = newBalance;
-                    updateUserUI();
-                    $('#roulette-status').textContent = message;
-                     $('#roulette-status').style.color = winnings > 0 ? 'var(--safe-color)' : 'var(--mine-color)';
-                    clearRouletteBets();
-                    wheel.style.transition = 'none';
-                    wheel.style.transform = `rotate(${finalAngle % 360}deg)`;
-                }, 5000);
-
-            } catch (err) {
-                alert(err.message);
-                isSpinning = false;
-                clearRouletteBets();
-                updateRouletteUI();
-            }
-        }
-        
-        function setupRouletteListeners() {
-            createRouletteTable();
-            createRouletteWheel();
-            $('#roulette-grid').addEventListener('click', handleRouletteBet);
-            $('#roulette-clear-btn').addEventListener('click', clearRouletteBets);
-            $('#roulette-spin-btn').addEventListener('click', spinRouletteWheel);
-        }
-
+        checkForSavedSession();
     });
     </script>
 </body>
