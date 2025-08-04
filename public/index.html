@@ -68,7 +68,7 @@
         #roulette-wheel-bg { width: 100%; height: 100%; border-radius: 50%; position: absolute; background-color: var(--roulette-black); box-shadow: inset 0 0 20px rgba(0,0,0,0.6), 0 0 15px rgba(0,0,0,0.3); border: 8px solid #855d3a; }
         .wheel-number-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         .wheel-number { position: absolute; top: 50%; left: 50%; height: 50%; transform-origin: 0 0; font-weight: bold; font-size: 14px; color: white; text-shadow: 1px 1px 1px #000; text-align: center; }
-        .wheel-number span { display: block; transform: rotate(-90deg) translate(10px, -145px); }
+        .wheel-number span { display: block; transform: rotate(-90deg) translate(8px, -142px); }
         .roulette-controls { display: flex; flex-direction: column; gap: 15px; background-color: var(--secondary-color); padding: 15px; border-radius: var(--border-radius); }
         .roulette-controls .form-group { display: flex; align-items: center; gap: 10px; }
         .roulette-controls label { margin-bottom: 0; }
@@ -101,7 +101,7 @@
         .admin-section { margin-bottom: 30px; background-color: var(--secondary-color); padding: 20px; border-radius: var(--border-radius); }
         .admin-section h3 { margin-top: 0; border-bottom: 1px solid #444; padding-bottom: 10px; }
         .admin-form { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
-        .admin-form input { background-color: var(--bg-color); border-color: #444; }
+        .admin-form input, .admin-form select { background-color: var(--bg-color); border-color: #444; }
     </style>
 </head>
 <body>
@@ -135,7 +135,6 @@
             <div id="mines-tab" class="tab-content"><div class="game-container"><div class="game-controls"><div class="form-group"><label for="mines-bet-amount">Bet</label><input type="number" id="mines-bet-amount" value="100"></div><div class="form-group"><label for="mines-count">Mines</label><select id="mines-count"><option value="3">3</option><option value="5">5</option><option value="8">8</option><option value="10">10</option></select></div><button id="mines-start-btn" class="custom-button">Start</button></div><div id="mines-game-area" style="display: none;"><div class="mines-grid" id="mines-grid" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; max-width: 350px; margin: 20px auto;"></div><div id="mines-info"><div id="mines-info-stats"><div><span>Profit</span><strong id="mines-profit">0</strong></div><div><span>Next Tile</span><strong id="mines-next-profit">0</strong></div></div><button id="mines-cashout-btn" class="custom-button" disabled>Cashout</button></div></div></div></div>
             <div id="roulette-tab" class="tab-content"><div id="roulette-container"><h1>Roulette</h1><div class="roulette-top-section"><div class="roulette-wheel-container"><div class="wheel-marker"></div><div class="roulette-wheel"><div id="roulette-wheel-bg"></div><div class="wheel-number-container" id="wheel-number-container"></div></div></div><div class="roulette-controls"><div class="form-group"><label for="roulette-bet-amount">Bet Amount:</label><input type="number" id="roulette-bet-amount" value="100"></div><div id="roulette-status">Place your bets!</div><div class="buttons"><button id="roulette-spin-btn" class="custom-button">Spin</button><button id="roulette-clear-btn" class="custom-button">Clear Bets</button></div></div></div><div class="roulette-table"><div class="roulette-grid-container" id="roulette-grid-container"></div></div></div></div>
             
-            <!-- ADMIN TAB CONTENT -->
             <div id="admin-page" class="tab-content">
                 <h1>Admin Panel</h1>
                 <div id="admin-actions-container" style="display: none;">
@@ -217,7 +216,7 @@
         function setupMinesListeners() { $('#mines-start-btn').addEventListener('click', startMines); $('#mines-cashout-btn').addEventListener('click', cashoutMines); }
         async function startMines() { try { isMinesGameOver = false; const bet = parseInt($('#mines-bet-amount').value), minesCount = parseInt($('#mines-count').value); const data = await apiCall('/mines/start', { method: 'POST', body: JSON.stringify({ bet, minesCount }) }); currentUser.coins = data.newBalance; updateUserUI(); renderMinesGrid(); $('#mines-game-area').style.display = 'block'; $('#mines-start-btn').disabled = true; $('#mines-cashout-btn').disabled = true; $('#mines-profit').textContent = '0'; const mult = { 3: 1.15, 5: 1.3, 8: 1.5, 10: 1.8 }[minesCount]; $('#mines-next-profit').textContent = `${Math.floor(bet * mult - bet)}`; } catch (err) { alert(err.message); } }
         function renderMinesGrid() { let g = $('#mines-grid'); g.innerHTML = ''; for (let i = 0; i < 25; i++) { const c = document.createElement('div'); c.className = 'mine-cell'; c.style.cssText = 'width: 100%; padding-bottom: 100%; background-color: var(--secondary-color); border-radius: var(--border-radius); cursor: pointer; transition: background-color 0.2s; position: relative;'; c.addEventListener('mouseover', (e) => { if (!isMinesGameOver && !e.target.classList.contains('safe')) e.target.style.backgroundColor = '#444'; }); c.addEventListener('mouseout', (e) => { if (!e.target.classList.contains('safe')) e.target.style.backgroundColor = 'var(--secondary-color)'; }); c.dataset.index = i; c.addEventListener('click', handleMineClick); g.appendChild(c); } }
-        async function handleMineClick(e) { const cell = e.target; if (isMinesGameOver || cell.classList.contains('disabled')) return; try { const data = await apiCall('/mines/click', { method: 'POST', body: JSON.stringify({ index: parseInt(cell.dataset.index) }) }); if (data.gameOver) { isMinesGameOver = true; alert(data.message); data.minePositions.forEach(p => $(`.mine-cell[data-index='${p}']`).style.backgroundColor = 'var(--mine-color)'); resetMinesGame(false); } else { cell.style.backgroundColor = 'var(--safe-color)'; cell.classList.add('safe', 'disabled'); $('#mines-cashout-btn').disabled = false; $('#mines-profit').textContent = data.profit; const bet = parseInt($('#mines-bet-amount').value); $('#mines-next-profit').textContent = `${Math.floor(bet * data.nextMultiplier - bet)}`; } } catch (err) { alert(err.message); resetMinesGame(true); } }
+        async function handleMineClick(e) { const cell = e.target; if (isMinesGameOver || cell.classList.contains('safe')) return; try { const data = await apiCall('/mines/click', { method: 'POST', body: JSON.stringify({ index: parseInt(cell.dataset.index) }) }); if (data.gameOver) { isMinesGameOver = true; alert(data.message); data.minePositions.forEach(p => $(`.mine-cell[data-index='${p}']`).style.backgroundColor = 'var(--mine-color)'); resetMinesGame(false); } else { cell.style.backgroundColor = 'var(--safe-color)'; cell.classList.add('safe'); $('#mines-cashout-btn').disabled = false; $('#mines-profit').textContent = data.profit; const bet = parseInt($('#mines-bet-amount').value); $('#mines-next-profit').textContent = `${Math.floor(bet * data.nextMultiplier - bet)}`; } } catch (err) { alert(err.message); resetMinesGame(true); } }
         async function cashoutMines() { try { isMinesGameOver = true; const data = await apiCall('/mines/cashout', { method: 'POST' }); alert(data.message); currentUser.coins = data.newBalance; updateUserUI(); resetMinesGame(true); } catch (err) { alert(err.message); } }
         function resetMinesGame(hide) { $('#mines-start-btn').disabled = false; $('#mines-cashout-btn').disabled = true; if (hide) $('#mines-game-area').style.display = 'none'; }
         const ROULETTE_NUMBERS_ORDER = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26]; const ROULETTE_COLORS = { 0: 'green', 1: 'red', 2: 'black', 3: 'red', 4: 'black', 5: 'red', 6: 'black', 7: 'red', 8: 'black', 9: 'red', 10: 'black', 11: 'black', 12: 'red', 13: 'black', 14: 'red', 15: 'black', 16: 'red', 17: 'black', 18: 'red', 19: 'red', 20: 'black', 21: 'red', 22: 'black', 23: 'red', 24: 'black', 25: 'red', 26: 'black', 27: 'red', 28: 'black', 29: 'black', 30: 'red', 31: 'black', 32: 'red', 33: 'black', 34: 'red', 35: 'black', 36: 'red' }; let rouletteBets = {}; let isSpinning = false;
@@ -229,85 +228,13 @@
         async function spinRouletteWheel() { if (isSpinning || Object.keys(rouletteBets).length === 0) return; isSpinning = true; updateRouletteUI(); $('#roulette-status').textContent = 'Spinning...'; $('#roulette-status').style.color = 'var(--accent-color)'; try { const result = await apiCall('/roulette/spin', { method: 'POST', body: JSON.stringify({ bets: rouletteBets }) }); const { winningNumber, winnings, newBalance, message } = result; const wheel = $('.roulette-wheel'); const numberIndex = ROULETTE_NUMBERS_ORDER.indexOf(winningNumber); const sliceAngle = 360 / ROULETTE_NUMBERS_ORDER.length; const targetAngle = -(numberIndex * sliceAngle) - (sliceAngle / 2); const currentTransform = window.getComputedStyle(wheel).transform; let currentRotation = 0; if (currentTransform !== 'none') { const values = currentTransform.split('(')[1].split(')')[0].split(','); currentRotation = Math.round(Math.atan2(values[1], values[0]) * (180 / Math.PI)); } const finalAngle = (Math.floor(currentRotation / 360) + 10) * 360 + targetAngle + (Math.random() * 4 - 2); wheel.style.transform = `rotate(${finalAngle}deg)`; setTimeout(() => { isSpinning = false; currentUser.coins = newBalance; updateUserUI(); $('#roulette-status').textContent = message; $('#roulette-status').style.color = winnings > 0 ? 'var(--safe-color)' : 'var(--mine-color)'; clearRouletteBets(); }, 6100); } catch (err) { alert(err.message); isSpinning = false; clearRouletteBets(); updateRouletteUI(); } }
         function setupRouletteListeners() { createRouletteTable(); createRouletteWheel(); $('#roulette-grid-container').addEventListener('click', handleRouletteBet); $('#roulette-clear-btn').addEventListener('click', clearRouletteBets); $('#roulette-spin-btn').addEventListener('click', spinRouletteWheel); }
         
-        function loadAdminPanel() {
-            if (!currentUser) return;
-            const isAdmin = currentUser.isAdmin;
-            const isOwner = currentUser.isOwner;
-            if (!isAdmin && !isOwner) {
-                $('#admin-actions-container').style.display = 'none';
-                $('#owner-actions-container').style.display = 'none';
-                $('#not-admin-message').style.display = 'block';
-                return;
-            }
-            $('#not-admin-message').style.display = 'none';
-            $('#admin-actions-container').style.display = 'block';
-            if (isOwner) {
-                $('#owner-actions-container').style.display = 'block';
-            } else {
-                $('#owner-actions-container').style.display = 'none';
-            }
-            // Update daily claim status
-            const twentyFourHours = 24 * 60 * 60 * 1000;
-            const lastClaim = new Date(currentUser.lastDailyClaim);
-            if (currentUser.lastDailyClaim && (new Date() - lastClaim < twentyFourHours)) {
-                $('#daily-claim-status').textContent = `Next claim available in ${Math.ceil((twentyFourHours - (new Date() - lastClaim)) / (1000 * 60 * 60))} hours.`;
-                $('#claim-daily-btn').disabled = true;
-            } else {
-                $('#daily-claim-status').textContent = 'You can claim your daily 100,000 coins.';
-                $('#claim-daily-btn').disabled = false;
-            }
-        }
+        function loadAdminPanel() { if (!currentUser) return; const isAdmin = currentUser.isAdmin, isOwner = currentUser.isOwner; if (!isAdmin && !isOwner) { $('#admin-actions-container').style.display = 'none'; $('#owner-actions-container').style.display = 'none'; $('#not-admin-message').style.display = 'block'; return; } $('#not-admin-message').style.display = 'none'; $('#admin-actions-container').style.display = 'block'; if (isOwner) $('#owner-actions-container').style.display = 'block'; else $('#owner-actions-container').style.display = 'none'; const twentyFourHours = 24 * 60 * 60 * 1000, lastClaim = new Date(currentUser.lastDailyClaim); if (currentUser.lastDailyClaim && (new Date() - lastClaim < twentyFourHours)) { $('#daily-claim-status').textContent = `Next claim in ${Math.ceil((twentyFourHours - (new Date() - lastClaim)) / (1000 * 60 * 60))} hours.`; $('#claim-daily-btn').disabled = true; } else { $('#daily-claim-status').textContent = 'You can claim your daily 100,000 coins.'; $('#claim-daily-btn').disabled = false; } }
         function setupAdminListeners() {
-            $('#claim-daily-btn').addEventListener('click', async () => {
-                try {
-                    const data = await apiCall('/admin/claim-daily', { method: 'POST' });
-                    alert(data.message);
-                    currentUser.coins = data.newBalance;
-                    currentUser.lastDailyClaim = data.lastDailyClaim;
-                    updateUserUI();
-                    loadAdminPanel(); // Refresh panel to show new status
-                } catch (error) { alert(error.message); }
-            });
-            $('#clear-chat-btn').addEventListener('click', async () => {
-                if (confirm('Are you sure you want to delete ALL chat messages permanently?')) {
-                    try {
-                        const data = await apiCall('/admin/clear-chat', { method: 'POST' });
-                        alert(data.message);
-                    } catch (error) { alert(error.message); }
-                }
-            });
-            $('#timeout-user-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const username = $('#timeout-username').value;
-                const duration = $('#timeout-duration').value;
-                try {
-                    const data = await apiCall('/admin/timeout-user', { method: 'POST', body: JSON.stringify({ username, duration }) });
-                    alert(data.message);
-                    $('#timeout-username').value = '';
-                    $('#timeout-duration').value = '';
-                } catch (error) { alert(error.message); }
-            });
-            $('#give-coins-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const username = $('#give-coins-username').value;
-                const amount = $('#give-coins-amount').value;
-                try {
-                    const data = await apiCall('/owner/give-coins', { method: 'POST', body: JSON.stringify({ username, amount }) });
-                    alert(data.message);
-                    $('#give-coins-username').value = '';
-                    $('#give-coins-amount').value = '';
-                } catch (error) { alert(error.message); }
-            });
-             $('#set-admin-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const username = $('#set-admin-username').value;
-                const isAdmin = $('#set-admin-status').value === 'true';
-                try {
-                    const data = await apiCall('/owner/set-admin', { method: 'POST', body: JSON.stringify({ username, isAdmin }) });
-                    alert(data.message);
-                    $('#set-admin-username').value = '';
-                } catch (error) { alert(error.message); }
-            });
+            $('#claim-daily-btn').addEventListener('click', async () => { try { const data = await apiCall('/admin/claim-daily', { method: 'POST' }); alert(data.message); currentUser.coins = data.newBalance; currentUser.lastDailyClaim = data.lastDailyClaim; updateUserUI(); loadAdminPanel(); } catch (error) { alert(error.message); } });
+            $('#clear-chat-btn').addEventListener('click', async () => { if (confirm('Are you sure you want to delete ALL chat messages permanently?')) { try { const data = await apiCall('/admin/clear-chat', { method: 'POST' }); alert(data.message); } catch (error) { alert(error.message); } } });
+            $('#timeout-user-form').addEventListener('submit', async (e) => { e.preventDefault(); const username = $('#timeout-username').value, duration = $('#timeout-duration').value; try { const data = await apiCall('/admin/timeout-user', { method: 'POST', body: JSON.stringify({ username, duration }) }); alert(data.message); $('#timeout-username').value = ''; $('#timeout-duration').value = ''; } catch (error) { alert(error.message); } });
+            $('#give-coins-form').addEventListener('submit', async (e) => { e.preventDefault(); const username = $('#give-coins-username').value, amount = $('#give-coins-amount').value; try { const data = await apiCall('/owner/give-coins', { method: 'POST', body: JSON.stringify({ username, amount }) }); alert(data.message); $('#give-coins-username').value = ''; $('#give-coins-amount').value = ''; } catch (error) { alert(error.message); } });
+            $('#set-admin-form').addEventListener('submit', async (e) => { e.preventDefault(); const username = $('#set-admin-username').value, isAdmin = $('#set-admin-status').value === 'true'; try { const data = await apiCall('/owner/set-admin', { method: 'POST', body: JSON.stringify({ username, isAdmin }) }); alert(data.message); $('#set-admin-username').value = ''; } catch (error) { alert(error.message); } });
         }
         
         checkForSavedSession();
