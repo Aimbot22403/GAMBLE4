@@ -123,6 +123,79 @@ app.post('/api/mines/cashout', authenticateToken, async (req, res) => {
     const game = minesGames.get(req.user.id); if (!game || game.clicks === 0) return res.status(400).json({ message: "No game or clicks to cashout." }); const winnings = Math.floor(game.bet * Math.pow(game.mult, game.clicks)); const user = await User.findById(req.user.id); user.coins += winnings; await user.save(); minesGames.delete(req.user.id); broadcastOnlineUsers(); res.json({ message: `Cashed out ${winnings} coins!`, newBalance: user.coins });
 });
 
+const ROULETTE_NUMBERS = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
+const ROULETTE_COLORS = { 0: 'green', 1: 'red', 2: 'black', 3: 'red', 4: 'black', 5: 'red', 6: 'black', 7: 'red', 8: 'black', 9: 'red', 10: 'black', 11: 'black', 12: 'red', 13: 'black', 14: 'red', 15: 'black', 16: 'red', 17: 'black', 18: 'red', 19: 'red', 20: 'black', 21: 'red', 22: 'black', 23: 'red', 24: 'black', 25: 'red', 26: 'black', 27: 'red', 28: 'black', 29: 'black', 30: 'red', 31: 'black', 32: 'red', 33: 'black', 34: 'red', 35: 'black', 36: 'red' };
+
+app.post('/api/roulette/spin', authenticateToken, async (req, res) => {
+    const { bets } = req.body;
+    const user = await User.findById(req.user.id);
+    if (!bets || typeof bets !== 'object' || Object.keys(bets).length === 0) {
+        return res.status(400).json({ message: "No bets placed." });
+    }
+    let totalBet = 0;
+    for (const betType in bets) {
+        for (const value in bets[betType]) {
+            const amount = parseInt(bets[betType][value], 10);
+            if (isNaN(amount) || amount <= 0) return res.status(400).json({ message: "Invalid bet amount." });
+            totalBet += amount;
+        }
+    }
+    if (user.coins < totalBet) return res.status(400).json({ message: "Insufficient coins." });
+    user.coins -= totalBet;
+    await user.save();
+    broadcastOnlineUsers();
+
+    const winningNumber = ROULETTE_NUMBERS[Math.floor(Math.random() * ROULETTE_NUMBERS.length)];
+    const winningColor = ROULETTE_COLORS[winningNumber];
+
+    let winnings = 0;
+    const payoutMultipliers = {
+        number: 36, color: 2, dozen: 3, column: 3, parity: 2, range: 2
+    };
+
+    if (bets.number && bets.number[winningNumber]) {
+        winnings += bets.number[winningNumber] * payoutMultipliers.number;
+    }
+    if (bets.color && bets.color[winningColor]) {
+        winnings += bets.color[winningColor] * payoutMultipliers.color;
+    }
+    if (winningNumber > 0) {
+        if (bets.parity) {
+            if (winningNumber % 2 === 0 && bets.parity.even) winnings += bets.parity.even * payoutMultipliers.parity;
+            if (winningNumber % 2 !== 0 && bets.parity.odd) winnings += bets.parity.odd * payoutMultipliers.parity;
+        }
+        if (bets.range) {
+            if (winningNumber >= 1 && winningNumber <= 18 && bets.range['1-18']) winnings += bets.range['1-18'] * payoutMultipliers.range;
+            if (winningNumber >= 19 && winningNumber <= 36 && bets.range['19-36']) winnings += bets.range['19-36'] * payoutMultipliers.range;
+        }
+        if (bets.dozen) {
+            if (winningNumber >= 1 && winningNumber <= 12 && bets.dozen['1st']) winnings += bets.dozen['1st'] * payoutMultipliers.dozen;
+            if (winningNumber >= 13 && winningNumber <= 24 && bets.dozen['2nd']) winnings += bets.dozen['2nd'] * payoutMultipliers.dozen;
+            if (winningNumber >= 25 && winningNumber <= 36 && bets.dozen['3rd']) winnings += bets.dozen['3rd'] * payoutMultipliers.dozen;
+        }
+        if (bets.column) {
+            const column = (winningNumber - 1) % 3 + 1;
+            if (column === 1 && bets.column['1st']) winnings += bets.column['1st'] * payoutMultipliers.column;
+            if (column === 2 && bets.column['2nd']) winnings += bets.column['2nd'] * payoutMultipliers.column;
+            if (column === 3 && bets.column['3rd']) winnings += bets.column['3rd'] * payoutMultipliers.column;
+        }
+    }
+
+    if (winnings > 0) {
+        user.coins += winnings;
+        await user.save();
+    }
+    broadcastOnlineUsers();
+    res.json({
+        winningNumber,
+        winningColor,
+        winnings,
+        newBalance: user.coins,
+        message: `The wheel landed on ${winningNumber} (${winningColor}). You won ${winnings} coins.`
+    });
+});
+
+
 io.use(async (socket, next) => {
     const token = socket.handshake.auth.token;
     if (!token) return next(new Error("Authentication error"));
@@ -193,12 +266,10 @@ async function broadcastOnlineUsers() {
 }
 setInterval(broadcastOnlineUsers, 5000);
 
-// --- CATCH-ALL ROUTE ---
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// --- SERVER LISTEN ---
 server.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });

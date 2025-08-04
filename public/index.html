@@ -10,6 +10,7 @@
             --bg-color: #121212; --primary-color: #1e1e1e; --secondary-color: #2a2a2a;
             --text-color: #e0e0e0; --accent-color: #ffffff; --border-radius: 12px;
             --shadow: 0 4px 15px rgba(0, 0, 0, 0.5); --safe-color: #2a9d8f; --mine-color: #e76f51;
+            --roulette-red: #d94848; --roulette-black: #222; --roulette-green: #4caf50;
         }
         * { box-sizing: border-box; }
         html, body {
@@ -99,6 +100,38 @@
         .mine-cell.disabled { pointer-events: none; opacity: 0.8; }
         #mines-info { display: flex; justify-content: space-around; align-items: center; background: var(--secondary-color); padding: 15px; border-radius: var(--border-radius); margin-top: 20px; }
         #mines-info div { text-align: center; } #mines-info span { display: block; font-size: 14px; color: #aaa; } #mines-info strong { font-size: 1.2em; }
+
+        /* Roulette Styles */
+        #roulette-container { display: flex; flex-direction: column; align-items: center; gap: 30px;}
+        .roulette-wheel-container { position: relative; width: 300px; height: 300px; }
+        .roulette-wheel { width: 100%; height: 100%; border: 10px solid #a0522d; border-radius: 50%; background-color: #333; transition: transform 5s cubic-bezier(0.2, 0.8, 0.2, 1); position: relative; }
+        .wheel-slice { position: absolute; width: 50%; height: 100%; left: 50%; transform-origin: 0 50%; }
+        .wheel-number { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; font-size: 14px; font-weight: bold; transform: rotate(4.86deg); color: white; }
+        .wheel-marker { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 20px solid var(--accent-color); z-index: 5; }
+        .roulette-table { background-color: var(--secondary-color); padding: 15px; border-radius: var(--border-radius); width: 100%; max-width: 800px; }
+        .roulette-grid { display: grid; grid-template-columns: repeat(14, 1fr); gap: 5px; }
+        .roulette-cell {
+            aspect-ratio: 1 / 1; display: flex; justify-content: center; align-items: center;
+            font-weight: bold; border-radius: 5px; cursor: pointer; transition: all 0.2s;
+            position: relative; overflow: hidden;
+        }
+        .roulette-cell:hover { transform: scale(1.1); z-index: 10; }
+        .roulette-cell.number { border: 1px solid #555; }
+        .roulette-cell.red { background-color: var(--roulette-red); color: white; }
+        .roulette-cell.black { background-color: var(--roulette-black); color: white; }
+        .roulette-cell.green { background-color: var(--roulette-green); color: white; grid-column: 1 / 15; }
+        .roulette-cell.outside { background-color: #3a3a3a; grid-column: span 2; }
+        .roulette-cell.outside-4 { background-color: #3a3a3a; grid-column: span 4; }
+        .roulette-cell.outside-6 { background-color: #3a3a3a; grid-column: span 6; }
+        .roulette-cell.col-header { background-color: transparent; border: none; cursor: default; }
+        .roulette-cell .bet-chip {
+            position: absolute; bottom: 2px; right: 2px; background-color: rgba(255, 255, 0, 0.8);
+            color: black; font-size: 10px; padding: 2px 4px; border-radius: 50%; font-weight: bold;
+            display: none;
+        }
+        .roulette-cell.has-bet .bet-chip { display: block; }
+        .roulette-controls { display: flex; align-items: center; justify-content: center; gap: 20px; margin-top: 20px; }
+        .roulette-controls .form-group { flex-direction: row; align-items: center; gap: 10px; }
     </style>
 </head>
 <body>
@@ -112,7 +145,7 @@
     <div id="app-container">
         <aside class="sidebar">
             <div class="logo">Ghosts Gambling</div>
-            <nav class="nav-menu"><button class="nav-tab active" data-tab="home">Home</button><button class="nav-tab" data-tab="blackjack">Blackjack</button><button class="nav-tab" data-tab="mines">Mines</button></nav>
+            <nav class="nav-menu"><button class="nav-tab active" data-tab="home">Home</button><button class="nav-tab" data-tab="blackjack">Blackjack</button><button class="nav-tab" data-tab="mines">Mines</button><button class="nav-tab" data-tab="roulette">Roulette</button></nav>
             <div class="user-info">
                 <div class="user-info-header"><div class="user-details"><img id="user-pfp-display" src="" alt="PFP"><div><div id="username-display"></div><div id="coins-display"></div></div></div><button id="menu-button">☰</button></div>
                 <div class="dropdown-menu" id="dropdown-menu"><a href="#" id="profile-btn">Profile</a><a href="#" id="logout-btn">Logout</a></div>
@@ -123,6 +156,27 @@
             <div id="profile-page" class="tab-content"><h1>Edit Profile</h1><img id="profile-pfp-preview" src="" alt="Your PFP"><div class="form-group"><label for="profile-pfp-upload">Upload New Profile Picture</label><input type="file" id="profile-pfp-upload" accept="image/jpeg, image/png, image/gif"><small style="color:#aaa; margin-top:5px; display:block;">Max 25MB. Your old picture will be replaced.</small></div><div class="form-group"><label for="profile-bio">Bio</label><textarea id="profile-bio" placeholder="Tell everyone a little about yourself..."></textarea></div><button id="save-profile-btn" class="custom-button">Save Changes</button></div>
             <div id="blackjack-tab" class="tab-content"><div class="game-container"><div id="bj-controls" class="game-controls"><div class="form-group"><label for="bj-bet-amount">Bet</label><input type="number" id="bj-bet-amount" value="100"></div><button id="bj-start-btn" class="custom-button">Start</button></div><div id="blackjack-game-area" class="game-area" style="display: none;"><div class="hand-container"><h3>Dealer (<span id="dealer-score">0</span>)</h3><div class="cards" id="dealer-cards"></div></div><div class="game-status" id="bj-status"></div><div id="bj-actions" class="hand-container"><h3>You (<span id="player-score">0</span>)</h3><div class="cards" id="player-cards"></div><div style="margin-top: 20px;"><button id="bj-hit-btn" class="custom-button">Hit</button><button id="bj-stand-btn" class="custom-button">Stand</button></div></div></div></div></div>
             <div id="mines-tab" class="tab-content"><div class="game-container"><div class="game-controls"><div class="form-group"><label for="mines-bet-amount">Bet</label><input type="number" id="mines-bet-amount" value="100"></div><div class="form-group"><label for="mines-count">Mines</label><select id="mines-count" class="game-controls input"><option value="3">3</option><option value="5">5</option><option value="8">8</option><option value="10">10</option></select></div><button id="mines-start-btn" class="custom-button">Start</button></div><div id="mines-game-area" style="display: none;"><div class="mines-grid" id="mines-grid"></div><div id="mines-info"><div><span>Profit</span><strong id="mines-profit">0</strong></div><div><span>Next Tile</span><strong id="mines-next-profit">0</strong></div><button id="mines-cashout-btn" class="custom-button" disabled>Cashout</button></div></div></div></div>
+            <div id="roulette-tab" class="tab-content">
+                <div class="game-container" id="roulette-container">
+                    <h1>Roulette</h1>
+                    <div class="roulette-wheel-container">
+                        <div class="wheel-marker"></div>
+                        <div class="roulette-wheel" id="roulette-wheel"></div>
+                    </div>
+                    <div class="game-status" id="roulette-status">Place your bets!</div>
+                    <div class="roulette-table">
+                        <div class="roulette-grid" id="roulette-grid"></div>
+                    </div>
+                     <div class="roulette-controls game-controls">
+                        <div class="form-group">
+                            <label for="roulette-bet-amount">Bet Amount:</label>
+                            <input type="number" id="roulette-bet-amount" value="100">
+                        </div>
+                        <button id="roulette-spin-btn" class="custom-button">Spin</button>
+                        <button id="roulette-clear-btn" class="custom-button">Clear Bets</button>
+                    </div>
+                </div>
+            </div>
         </main>
         <aside class="chat-sidebar"><div class="chat-container"><h3>Online</h3><ul id="online-users-list"></ul></div><div class="chat-container"><h3>Chat</h3><ul id="chat-messages"></ul><form id="chat-form"><input id="chat-input" autocomplete="off" placeholder="Say something..." /></form></div></aside>
     </div>
@@ -139,11 +193,10 @@
         async function initializeApp() { $('#auth-modal').style.display = 'none'; $('#app-container').style.display = 'flex'; await fetchProfile(); setupWebSocket(); setupUIEventListeners(); switchTab('home'); }
         async function fetchProfile() { try { currentUser = await apiCall('/profile'); updateUserUI(); } catch (err) { console.error(err); } }
         function updateUserUI() { if (!currentUser) return; $('#username-display').textContent = currentUser.username; $('#coins-display').textContent = `${currentUser.coins.toLocaleString()} coins`; $('#user-pfp-display').src = currentUser.pfp; }
-        
+
         function setupWebSocket() {
             if (socket) socket.disconnect();
-            
-            // THE FIX: Pass the token in the 'auth' object. The server's middleware will handle it.
+
             socket = io({ auth: { token } });
 
             socket.on('connect_error', (err) => {
@@ -157,7 +210,7 @@
             socket.on('message_deleted', messageId => { const msgEl = $(`[data-message-id="${messageId}"]`); if (msgEl) msgEl.remove(); });
             $('#chat-form').addEventListener('submit', e => { e.preventDefault(); if ($('#chat-input').value) { socket.emit('chat_message', $('#chat-input').value); $('#chat-input').value = ''; } });
         }
-        
+
         function addChatMessage(msg) { const cb = $('#chat-messages'); const isOwnMessage = msg.username === currentUser.username; const fiveMinutes = 5 * 60 * 1000; const isDeletable = isOwnMessage && (Date.now() - new Date(msg.timestamp).getTime() < fiveMinutes); const deleteButton = isDeletable ? `<span class="delete-msg-btn" data-message-id="${msg._id}" title="Delete message">🗑️</span>` : ''; cb.innerHTML += `<li class="message-item" data-message-id="${msg._id}"><img src="${msg.pfp || 'https://i.imgur.com/8bzvETr.png'}" alt="${msg.username}"><div class="message-content"><div class="message-header"><span class="message-user" data-username="${msg.username}">${msg.username}</span><span class="message-timestamp">${new Date(msg.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>${deleteButton}</div><div>${msg.message.replace(/</g, "<").replace(/>/g, ">")}</div></div></li>`; cb.scrollTop = cb.scrollHeight; }
         function setupUIEventListeners() {
             $$('.nav-tab').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
@@ -171,7 +224,9 @@
             eventDelegate($('#online-users-list'), 'click', 'li', (e, el) => showPublicProfile(el.dataset.username));
             $('#public-profile-modal').addEventListener('click', e => { if (e.target.id === 'public-profile-modal') e.target.classList.add('hidden'); });
             $('#profile-pfp-upload').addEventListener('change', handlePfpUpload);
-            setupBlackjackListeners(); setupMinesListeners();
+            setupBlackjackListeners();
+            setupMinesListeners();
+            setupRouletteListeners();
         }
         function switchTab(id) { $$('.tab-content').forEach(t => t.classList.remove('active')); $$('.nav-tab').forEach(b => b.classList.remove('active')); const el = $(`#${id}-tab`) || $(`#${id}`); if (el) el.classList.add('active'); const nb = $(`.nav-tab[data-tab="${id}"]`); if (nb) nb.classList.add('active'); }
         function loadProfileForEditing() { $('#profile-pfp-preview').src = currentUser.pfp; $('#profile-bio').value = currentUser.bio; newPfpBase64 = null; $('#profile-pfp-upload').value = ''; }
@@ -193,6 +248,181 @@
         async function handleMineClick(e) { const cell = e.target; if (cell.classList.contains('disabled')) return; cell.classList.add('disabled'); try { const data = await apiCall('/mines/click', { method: 'POST', body: JSON.stringify({ index: parseInt(cell.dataset.index) }) }); if (data.gameOver) { alert(data.message); data.minePositions.forEach(p => $(`.mine-cell[data-index='${p}']`).classList.add('mine')); $$('.mine-cell').forEach(c => c.classList.add('disabled')); resetMinesGame(false); } else { cell.classList.remove('disabled'); cell.classList.add('safe', 'disabled'); $('#mines-cashout-btn').disabled = false; $('#mines-profit').textContent = data.profit; const bet = parseInt($('#mines-bet-amount').value); $('#mines-next-profit').textContent = `${Math.floor(bet*data.nextMultiplier-bet)}`; } } catch(err) { alert(err.message); resetMinesGame(true); } }
         async function cashoutMines() { try { const data = await apiCall('/mines/cashout', { method: 'POST' }); alert(data.message); currentUser.coins = data.newBalance; updateUserUI(); resetMinesGame(true); } catch(err) { alert(err.message); } }
         function resetMinesGame(hide) { $('#mines-start-btn').disabled = false; $('#mines-cashout-btn').disabled = true; if (hide) $('#mines-game-area').style.display = 'none'; }
+        
+        const ROULETTE_NUMBERS = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
+        const ROULETTE_COLORS = { 0: 'green', 1: 'red', 2: 'black', 3: 'red', 4: 'black', 5: 'red', 6: 'black', 7: 'red', 8: 'black', 9: 'red', 10: 'black', 11: 'black', 12: 'red', 13: 'black', 14: 'red', 15: 'black', 16: 'red', 17: 'black', 18: 'red', 19: 'red', 20: 'black', 21: 'red', 22: 'black', 23: 'red', 24: 'black', 25: 'red', 26: 'black', 27: 'red', 28: 'black', 29: 'black', 30: 'red', 31: 'black', 32: 'red', 33: 'black', 34: 'red', 35: 'black', 36: 'red' };
+        let rouletteBets = {};
+        let isSpinning = false;
+        
+        function createRouletteTable() {
+            const grid = $('#roulette-grid');
+            grid.innerHTML = '';
+            const zeroCell = document.createElement('div');
+            zeroCell.className = 'roulette-cell number green';
+            zeroCell.textContent = '0';
+            zeroCell.dataset.betType = 'number';
+            zeroCell.dataset.betValue = '0';
+            grid.appendChild(zeroCell);
+
+            for (let i = 1; i <= 36; i++) {
+                const cell = document.createElement('div');
+                cell.className = `roulette-cell number ${ROULETTE_COLORS[i]}`;
+                cell.style.gridRow = (3 - (i-1) % 3);
+                cell.style.gridColumn = Math.ceil(i/3) + 1;
+                cell.textContent = i;
+                cell.dataset.betType = 'number';
+                cell.dataset.betValue = i;
+                grid.appendChild(cell);
+            }
+            
+            const outsideBets = [
+                { label: '1-18', type: 'range', value: '1-18', span: 'outside-6' },
+                { label: 'Even', type: 'parity', value: 'even', span: 'outside-6' },
+                { label: 'Red', type: 'color', value: 'red', span: 'outside-6', color: 'red'},
+                { label: 'Black', type: 'color', value: 'black', span: 'outside-6', color: 'black'},
+                { label: 'Odd', type: 'parity', value: 'odd', span: 'outside-6' },
+                { label: '19-36', type: 'range', value: '19-36', span: 'outside-6' },
+                { label: '1st 12', type: 'dozen', value: '1st', span: 'outside-4' },
+                { label: '2nd 12', type: 'dozen', value: '2nd', span: 'outside-4' },
+                { label: '3rd 12', type: 'dozen', value: '3rd', span: 'outside-4' },
+                { label: 'Col 1', type: 'column', value: '1st', span: 'outside-4' },
+                { label: 'Col 2', type: 'column', value: '2nd', span: 'outside-4' },
+                { label: 'Col 3', type: 'column', value: '3rd', span: 'outside-4' },
+            ];
+            
+            outsideBets.forEach(bet => {
+                const cell = document.createElement('div');
+                cell.className = `roulette-cell ${bet.span}`;
+                cell.textContent = bet.label;
+                cell.dataset.betType = bet.type;
+                cell.dataset.betValue = bet.value;
+                if (bet.color) cell.classList.add(bet.color);
+                grid.appendChild(cell);
+            });
+            $$('.roulette-cell').forEach(cell => cell.innerHTML += '<span class="bet-chip"></span>');
+        }
+
+        function createRouletteWheel() {
+            const wheel = $('#roulette-wheel');
+            wheel.innerHTML = '';
+            const sliceAngle = 360 / ROULETTE_NUMBERS.length;
+            ROULETTE_NUMBERS.forEach((num, index) => {
+                const slice = document.createElement('div');
+                slice.className = 'wheel-slice';
+                slice.style.transform = `rotate(${index * sliceAngle}deg)`;
+                
+                const numberDiv = document.createElement('div');
+                numberDiv.className = `wheel-number ${ROULETTE_COLORS[num]}`;
+                numberDiv.textContent = num;
+                
+                slice.appendChild(numberDiv);
+                wheel.appendChild(slice);
+            });
+        }
+
+        function handleRouletteBet(e) {
+            if (isSpinning) return;
+            const cell = e.target.closest('.roulette-cell');
+            if (!cell || !cell.dataset.betType) return;
+
+            const betAmount = parseInt($('#roulette-bet-amount').value, 10);
+            if (isNaN(betAmount) || betAmount <= 0) {
+                alert("Please enter a valid bet amount.");
+                return;
+            }
+
+            const { betType, betValue } = cell.dataset;
+            rouletteBets[betType] = rouletteBets[betType] || {};
+            rouletteBets[betType][betValue] = (rouletteBets[betType][betValue] || 0) + betAmount;
+            
+            updateRouletteUI();
+        }
+
+        function updateRouletteUI() {
+            let totalBet = 0;
+            $$('.roulette-cell').forEach(cell => {
+                cell.classList.remove('has-bet');
+                cell.querySelector('.bet-chip').textContent = '';
+                cell.querySelector('.bet-chip').style.display = 'none';
+            });
+
+            for (const type in rouletteBets) {
+                for (const value in rouletteBets[type]) {
+                    const amount = rouletteBets[type][value];
+                    totalBet += amount;
+                    const cell = $(`.roulette-cell[data-bet-type="${type}"][data-bet-value="${value}"]`);
+                    if (cell) {
+                        cell.classList.add('has-bet');
+                        cell.querySelector('.bet-chip').textContent = amount.toLocaleString();
+                        cell.querySelector('.bet-chip').style.display = 'block';
+                    }
+                }
+            }
+            $('#roulette-spin-btn').disabled = totalBet === 0 || isSpinning;
+        }
+        
+        function clearRouletteBets() {
+            if(isSpinning) return;
+            rouletteBets = {};
+            $('#roulette-status').textContent = 'Place your bets!';
+             $('#roulette-status').style.color = 'var(--accent-color)';
+            updateRouletteUI();
+        }
+        
+        async function spinRouletteWheel() {
+            if (Object.keys(rouletteBets).length === 0) {
+                alert("Please place a bet first.");
+                return;
+            }
+            isSpinning = true;
+            updateRouletteUI();
+            $('#roulette-status').textContent = 'Spinning...';
+
+            try {
+                const result = await apiCall('/roulette/spin', {
+                    method: 'POST',
+                    body: JSON.stringify({ bets: rouletteBets })
+                });
+
+                const { winningNumber, winnings, newBalance, message } = result;
+                
+                const wheel = $('#roulette-wheel');
+                const numberIndex = ROULETTE_NUMBERS.indexOf(winningNumber);
+                const sliceAngle = 360 / ROULETTE_NUMBERS.length;
+                const targetAngle = -(numberIndex * sliceAngle);
+                const randomOffset = (Math.random() - 0.5) * (sliceAngle * 0.8);
+                const finalAngle = 360 * 10 + targetAngle + randomOffset;
+
+                wheel.style.transition = 'transform 5s cubic-bezier(0.2, 0.8, 0.2, 1)';
+                wheel.style.transform = `rotate(${finalAngle}deg)`;
+
+                setTimeout(() => {
+                    isSpinning = false;
+                    currentUser.coins = newBalance;
+                    updateUserUI();
+                    $('#roulette-status').textContent = message;
+                     $('#roulette-status').style.color = winnings > 0 ? 'var(--safe-color)' : 'var(--mine-color)';
+                    clearRouletteBets();
+                    wheel.style.transition = 'none';
+                    wheel.style.transform = `rotate(${finalAngle % 360}deg)`;
+                }, 5000);
+
+            } catch (err) {
+                alert(err.message);
+                isSpinning = false;
+                clearRouletteBets();
+                updateRouletteUI();
+            }
+        }
+        
+        function setupRouletteListeners() {
+            createRouletteTable();
+            createRouletteWheel();
+            $('#roulette-grid').addEventListener('click', handleRouletteBet);
+            $('#roulette-clear-btn').addEventListener('click', clearRouletteBets);
+            $('#roulette-spin-btn').addEventListener('click', spinRouletteWheel);
+        }
+
     });
     </script>
 </body>
