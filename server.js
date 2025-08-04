@@ -109,19 +109,19 @@ const getCardValue = c => { if (['J', 'Q', 'K'].includes(c.value)) return 10; if
 const getHandValue = h => { let v = h.reduce((s, c) => s + getCardValue(c), 0); let a = h.filter(c => c.value === 'A').length; while (v > 21 && a > 0) { v -= 10; a--; } return v; };
 
 app.post('/api/blackjack/start', authenticateToken, async (req, res) => {
-    const { bet } = req.body; const user = await User.findById(req.user.id); if (blackjackGames.has(req.user.id)) return res.status(400).json({ message: "Finish your current game." }); if (!bet || bet <= 0 || user.coins < bet) return res.status(400).json({ message: "Invalid bet." }); user.coins -= bet; await user.save(); broadcastOnlineUsers(); const deck = ['H', 'D', 'C', 'S'].flatMap(s => ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'].map(v => ({ suit: s, value: v }))).sort(() => .5 - Math.random()); const pHand = [deck.pop(), deck.pop()], dHand = [deck.pop(), deck.pop()]; const gState = { deck, playerHand: pHand, dealerHand: dHand, bet, status: 'playing' }; blackjackGames.set(req.user.id, gState); if (getHandValue(pHand) === 21) { const w = bet * 2.5; user.coins += w; await user.save(); blackjackGames.delete(req.user.id); broadcastOnlineUsers(); return res.json({ status: `Blackjack! Win ${w}`, playerHand: pHand, dealerHand: dHand, playerValue: 21, dealerValue: getHandValue(dHand), newBalance: user.coins }); } res.json({ status: 'playing', playerHand: pHand, dealerHand: [dHand[0], { suit: '?', value: '?' }], playerValue: getHandValue(pHand), newBalance: user.coins });
+    const { bet } = req.body; const user = await User.findById(req.user.id); if (blackjackGames.has(req.user.id)) return res.status(400).json({ message: "Finish your current game." }); if (!bet || bet <= 0 || user.coins < bet) return res.status(400).json({ message: "Invalid bet." }); user.coins -= bet; await user.save(); await broadcastOnlineUsers(); const deck = ['H', 'D', 'C', 'S'].flatMap(s => ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'].map(v => ({ suit: s, value: v }))).sort(() => .5 - Math.random()); const pHand = [deck.pop(), deck.pop()], dHand = [deck.pop(), deck.pop()]; const gState = { deck, playerHand: pHand, dealerHand: dHand, bet, status: 'playing' }; blackjackGames.set(req.user.id, gState); if (getHandValue(pHand) === 21) { const w = bet * 2.5; user.coins += w; await user.save(); blackjackGames.delete(req.user.id); await broadcastOnlineUsers(); return res.json({ status: `Blackjack! Win ${w}`, playerHand: pHand, dealerHand: dHand, playerValue: 21, dealerValue: getHandValue(dHand), newBalance: user.coins }); } res.json({ status: 'playing', playerHand: pHand, dealerHand: [dHand[0], { suit: '?', value: '?' }], playerValue: getHandValue(pHand), newBalance: user.coins });
 });
 app.post('/api/blackjack/action', authenticateToken, async (req, res) => {
-    const { action } = req.body; const game = blackjackGames.get(req.user.id); if (!game) return res.status(404).json({ message: "No active game." }); const user = await User.findById(req.user.id); let pVal = getHandValue(game.playerHand); if (action === 'hit') { game.playerHand.push(game.deck.pop()); pVal = getHandValue(game.playerHand); if (pVal > 21) { blackjackGames.delete(req.user.id); broadcastOnlineUsers(); return res.json({ status: `Bust! Lost ${game.bet}`, playerHand: game.playerHand, dealerHand: game.dealerHand, playerValue: pVal, newBalance: user.coins }); } blackjackGames.set(req.user.id, game); return res.json({ status: 'playing', playerHand: game.playerHand, dealerHand: [game.dealerHand[0],{suit:'?',value:'?'}], playerValue: pVal }); } if (action === 'stand') { while (getHandValue(game.dealerHand) < 17) game.dealerHand.push(game.deck.pop()); const dVal = getHandValue(game.dealerHand); pVal = getHandValue(game.playerHand); let msg = '', w = 0; if (dVal > 21 || pVal > dVal) { w = game.bet * 2; msg = `You win ${w}`; user.coins += w; } else if (pVal < dVal) { msg = `Dealer wins. Lost ${game.bet}`; } else { w = game.bet; msg = `Push. Bet of ${w} returned`; user.coins += w; } await user.save(); blackjackGames.delete(req.user.id); broadcastOnlineUsers(); return res.json({ status: msg, playerHand: game.playerHand, dealerHand: game.dealerHand, playerValue: pVal, dealerValue: dVal, newBalance: user.coins }); }
+    const { action } = req.body; const game = blackjackGames.get(req.user.id); if (!game) return res.status(404).json({ message: "No active game." }); const user = await User.findById(req.user.id); let pVal = getHandValue(game.playerHand); if (action === 'hit') { game.playerHand.push(game.deck.pop()); pVal = getHandValue(game.playerHand); if (pVal > 21) { blackjackGames.delete(req.user.id); await broadcastOnlineUsers(); return res.json({ status: `Bust! Lost ${game.bet}`, playerHand: game.playerHand, dealerHand: game.dealerHand, playerValue: pVal, newBalance: user.coins }); } blackjackGames.set(req.user.id, game); return res.json({ status: 'playing', playerHand: game.playerHand, dealerHand: [game.dealerHand[0],{suit:'?',value:'?'}], playerValue: pVal }); } if (action === 'stand') { while (getHandValue(game.dealerHand) < 17) game.dealerHand.push(game.deck.pop()); const dVal = getHandValue(game.dealerHand); pVal = getHandValue(game.playerHand); let msg = '', w = 0; if (dVal > 21 || pVal > dVal) { w = game.bet * 2; msg = `You win ${w}`; user.coins += w; } else if (pVal < dVal) { msg = `Dealer wins. Lost ${game.bet}`; } else { w = game.bet; msg = `Push. Bet of ${w} returned`; user.coins += w; } await user.save(); blackjackGames.delete(req.user.id); await broadcastOnlineUsers(); return res.json({ status: msg, playerHand: game.playerHand, dealerHand: game.dealerHand, playerValue: pVal, dealerValue: dVal, newBalance: user.coins }); }
 });
 app.post('/api/mines/start', authenticateToken, async (req, res) => {
-    const { bet, minesCount } = req.body; const user = await User.findById(req.user.id); if (minesGames.has(req.user.id)) return res.status(400).json({ message: "Finish your current game." }); if (!bet || bet <= 0 || user.coins < bet) return res.status(400).json({ message: "Invalid bet." }); if (![3, 5, 8, 10].includes(minesCount)) return res.status(400).json({ message: "Invalid mine count." }); user.coins -= bet; await user.save(); broadcastOnlineUsers(); const mines = new Set(); while (mines.size < minesCount) mines.add(Math.floor(Math.random() * 25)); minesGames.set(req.user.id, { bet, mines: Array.from(mines), clicks: 0, mult: { 3: 1.15, 5: 1.3, 8: 1.5, 10: 1.8 }[minesCount] }); res.json({ newBalance: user.coins });
+    const { bet, minesCount } = req.body; const user = await User.findById(req.user.id); if (minesGames.has(req.user.id)) return res.status(400).json({ message: "Finish your current game." }); if (!bet || bet <= 0 || user.coins < bet) return res.status(400).json({ message: "Invalid bet." }); if (![3, 5, 8, 10].includes(minesCount)) return res.status(400).json({ message: "Invalid mine count." }); user.coins -= bet; await user.save(); await broadcastOnlineUsers(); const mines = new Set(); while (mines.size < minesCount) mines.add(Math.floor(Math.random() * 25)); minesGames.set(req.user.id, { bet, mines: Array.from(mines), clicks: 0, mult: { 3: 1.15, 5: 1.3, 8: 1.5, 10: 1.8 }[minesCount] }); res.json({ newBalance: user.coins });
 });
 app.post('/api/mines/click', authenticateToken, async (req, res) => {
     const { index } = req.body; const game = minesGames.get(req.user.id); if (!game) return res.status(404).json({ message: "No active game." }); if (game.mines.includes(index)) { minesGames.delete(req.user.id); return res.json({ gameOver: true, message: `Boom! You lost ${game.bet}`, minePositions: game.mines }); } game.clicks++; const profit = game.bet * Math.pow(game.mult, game.clicks) - game.bet; minesGames.set(req.user.id, game); res.json({ gameOver: false, profit: Math.floor(profit), nextMultiplier: Math.pow(game.mult, game.clicks + 1) });
 });
 app.post('/api/mines/cashout', authenticateToken, async (req, res) => {
-    const game = minesGames.get(req.user.id); if (!game || game.clicks === 0) return res.status(400).json({ message: "No game or clicks to cashout." }); const winnings = Math.floor(game.bet * Math.pow(game.mult, game.clicks)); const user = await User.findById(req.user.id); user.coins += winnings; await user.save(); minesGames.delete(req.user.id); broadcastOnlineUsers(); res.json({ message: `Cashed out ${winnings} coins!`, newBalance: user.coins });
+    const game = minesGames.get(req.user.id); if (!game || game.clicks === 0) return res.status(400).json({ message: "No game or clicks to cashout." }); const winnings = Math.floor(game.bet * Math.pow(game.mult, game.clicks)); const user = await User.findById(req.user.id); user.coins += winnings; await user.save(); minesGames.delete(req.user.id); await broadcastOnlineUsers(); res.json({ message: `Cashed out ${winnings} coins!`, newBalance: user.coins });
 });
 
 const ROULETTE_NUMBERS = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
@@ -144,8 +144,7 @@ app.post('/api/roulette/spin', authenticateToken, async (req, res) => {
     if (user.coins < totalBet) return res.status(400).json({ message: "Insufficient coins." });
     user.coins -= totalBet;
     await user.save();
-    broadcastOnlineUsers();
-
+    
     const winningNumber = ROULETTE_NUMBERS[Math.floor(Math.random() * ROULETTE_NUMBERS.length)];
     const winningColor = ROULETTE_COLORS[winningNumber];
 
@@ -182,13 +181,15 @@ app.post('/api/roulette/spin', authenticateToken, async (req, res) => {
         user.coins += winnings;
         await user.save();
     }
-    broadcastOnlineUsers();
+
+    await broadcastOnlineUsers();
+
     res.json({
         winningNumber,
         winningColor,
         winnings,
         newBalance: user.coins,
-        message: `The wheel landed on ${winningNumber} (${winningColor}). You won ${winnings.toLocaleString()} coins.`
+        message: `Landed on ${winningNumber} ${winningColor}. You won ${winnings.toLocaleString()}!`
     });
 });
 
@@ -211,7 +212,7 @@ io.on('connection', async (socket) => {
     console.log(`User Authenticated & Connected: ${socket.username}`);
     try {
         await User.findByIdAndUpdate(socket.userId, { online: true });
-        broadcastOnlineUsers();
+        await broadcastOnlineUsers();
         const lastMessages = await Message.find().sort({ timestamp: -1 }).limit(50).lean();
         const messagesWithPfps = await Promise.all(lastMessages.map(async msg => {
             const sender = await User.findOne({ username: msg.username }).select('pfp').lean();
@@ -249,7 +250,7 @@ io.on('connection', async (socket) => {
         if (socket.userId) {
             try {
                 await User.findByIdAndUpdate(socket.userId, { online: false });
-                broadcastOnlineUsers();
+                await broadcastOnlineUsers();
                 blackjackGames.delete(socket.userId);
                 minesGames.delete(socket.userId);
                 rouletteGames.delete(socket.userId);
@@ -259,8 +260,12 @@ io.on('connection', async (socket) => {
     });
 });
 async function broadcastOnlineUsers() {
-    const onlineUsers = await User.find({ online: true }).select('username coins pfp');
-    io.emit('online_users', onlineUsers);
+    try {
+        const onlineUsers = await User.find({ online: true }).select('username coins pfp');
+        io.emit('online_users', onlineUsers);
+    } catch(err) {
+        console.error("Error broadcasting online users:", err);
+    }
 }
 setInterval(broadcastOnlineUsers, 5000);
 
